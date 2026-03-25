@@ -13,7 +13,7 @@ function formatScore(value: number): string {
 
 const displayTotal = computed(() => formatScore(store.totalTypes))
 const displayTps = computed(() => formatScore(store.typesPerSecond))
-const displayMultiplier = computed(() => `x${store.globalMultiplier}`)
+const displayMultiplier = computed(() => `x${store.typingMultiplier}`)
 
 function toggleFormat(): void {
   useShortFormat.value = !useShortFormat.value
@@ -33,7 +33,7 @@ function toggleFormat(): void {
       </div>
       <div class="score-item">
         <span class="score-item-value">{{ displayMultiplier }}</span>
-        <span class="score-item-label">倍率</span>
+        <span class="score-item-label">タイプ倍率</span>
       </div>
     </div>
     <button

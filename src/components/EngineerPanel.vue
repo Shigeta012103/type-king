@@ -6,13 +6,21 @@ import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
 
+function calcDigitBonus(count: number): number {
+  if (count < 10) return 1
+  const digits = Math.floor(Math.log10(count))
+  return 1 + digits * 0.3
+}
+
 const engineerItems = computed(() =>
   ENGINEER_DEFINITIONS.map((def) => {
     const owned = store.engineers.find((e) => e.definitionId === def.id)
     const count = owned?.count ?? 0
     const cost = store.getEngineerCost(def.id)
     const canAfford = store.totalTypes >= cost
-    return { ...def, count, cost, canAfford }
+    const digitBonus = calcDigitBonus(count)
+    const effectiveTps = def.typesPerSecond * count * digitBonus
+    return { ...def, count, cost, canAfford, digitBonus, effectiveTps }
   })
 )
 
@@ -48,7 +56,15 @@ function hire(definitionId: string): void {
           </span>
         </div>
         <div class="engineer-footer">
-          <span class="engineer-tps">{{ eng.typesPerSecond }}タイプ/秒</span>
+          <div class="engineer-tps-info">
+            <span class="engineer-tps">{{ eng.typesPerSecond }}/秒</span>
+            <span class="engineer-bonus" v-if="eng.digitBonus > 1">
+              x{{ eng.digitBonus.toFixed(1) }}
+            </span>
+            <span class="engineer-total-tps" v-if="eng.count > 0">
+              計{{ formatNumber(eng.effectiveTps) }}/秒
+            </span>
+          </div>
           <span class="engineer-cost" :class="{ affordable: eng.canAfford }">
             {{ formatNumber(eng.cost) }} タイプ
           </span>
@@ -171,8 +187,25 @@ function hire(definitionId: string): void {
   font-size: 0.8rem;
 }
 
+.engineer-tps-info {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .engineer-tps {
   color: rgba(255, 255, 255, 0.5);
+}
+
+.engineer-bonus {
+  color: #fbbf24;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.engineer-total-tps {
+  color: #00d2ff;
+  font-size: 0.75rem;
 }
 
 .engineer-cost {

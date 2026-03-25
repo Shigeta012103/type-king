@@ -6,21 +6,18 @@ import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
 
-const availableUpgrades = computed(() =>
-  UPGRADE_DEFINITIONS.filter(
-    (u) => !store.purchasedUpgradeIds.includes(u.id)
-  ).map((u) => ({
-    ...u,
-    canAfford: store.totalTypes >= u.cost,
-  }))
+const upgradeItems = computed(() =>
+  UPGRADE_DEFINITIONS.map((def) => {
+    const owned = store.upgrades.find((u) => u.definitionId === def.id)
+    const level = owned?.level ?? 0
+    const cost = store.getUpgradeCost(def.id)
+    const canAfford = store.totalTypes >= cost
+    return { ...def, level, cost, canAfford }
+  })
 )
 
-const purchasedCount = computed(
-  () => store.purchasedUpgradeIds.length
-)
-
-function purchase(upgradeId: string): void {
-  store.purchaseUpgrade(upgradeId)
+function purchase(definitionId: string): void {
+  store.purchaseUpgrade(definitionId)
 }
 </script>
 
@@ -29,26 +26,26 @@ function purchase(upgradeId: string): void {
     <h2 class="panel-title">
       <span class="panel-icon" aria-hidden="true">⬆️</span>
       アップグレード
-      <span class="purchased-badge" v-if="purchasedCount > 0">
-        {{ purchasedCount }}
-      </span>
+      <span class="panel-hint">タイピング強化</span>
     </h2>
-    <div v-if="availableUpgrades.length === 0" class="all-purchased">
-      全てのアップグレードを購入済み!
-    </div>
-    <div v-else class="upgrade-list">
+    <div class="upgrade-list">
       <button
-        v-for="upgrade in availableUpgrades"
+        v-for="upgrade in upgradeItems"
         :key="upgrade.id"
         class="upgrade-card"
-        :class="{ affordable: upgrade.canAfford }"
+        :class="{ affordable: upgrade.canAfford, owned: upgrade.level > 0 }"
         :disabled="!upgrade.canAfford"
-        :aria-label="`${upgrade.name}を購入 コスト${upgrade.cost}タイプ 効果:${upgrade.description}`"
+        :aria-label="`${upgrade.name}を購入 Lv.${upgrade.level} コスト${upgrade.cost}タイプ 効果:${upgrade.description}`"
         @click="purchase(upgrade.id)"
       >
         <span class="upgrade-icon" aria-hidden="true">{{ upgrade.icon }}</span>
         <div class="upgrade-info">
-          <span class="upgrade-name">{{ upgrade.name }}</span>
+          <div class="upgrade-name-row">
+            <span class="upgrade-name">{{ upgrade.name }}</span>
+            <span class="upgrade-level" v-if="upgrade.level > 0">
+              Lv.{{ upgrade.level }}
+            </span>
+          </div>
           <span class="upgrade-desc">{{ upgrade.description }}</span>
         </div>
         <span class="upgrade-cost" :class="{ affordable: upgrade.canAfford }">
@@ -81,21 +78,11 @@ function purchase(upgradeId: string): void {
   font-size: 1.25rem;
 }
 
-.purchased-badge {
-  background: #7b2ff7;
-  color: #fff;
+.panel-hint {
   font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
-  border-radius: 99px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
   margin-left: auto;
-}
-
-.all-purchased {
-  text-align: center;
-  padding: 1.5rem;
-  color: #4ade80;
-  font-weight: 600;
 }
 
 .upgrade-list {
@@ -135,6 +122,10 @@ function purchase(upgradeId: string): void {
   border-color: rgba(123, 47, 247, 0.3);
 }
 
+.upgrade-card.owned {
+  background: rgba(123, 47, 247, 0.05);
+}
+
 .upgrade-icon {
   font-size: 1.5rem;
   flex-shrink: 0;
@@ -147,10 +138,25 @@ function purchase(upgradeId: string): void {
   min-width: 0;
 }
 
+.upgrade-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .upgrade-name {
   font-weight: 700;
   color: #fff;
   font-size: 0.95rem;
+}
+
+.upgrade-level {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #c084fc;
+  background: rgba(123, 47, 247, 0.2);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
 }
 
 .upgrade-desc {

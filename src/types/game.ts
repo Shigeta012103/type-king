@@ -17,20 +17,18 @@ export interface UpgradeDefinition {
   id: string
   name: string
   description: string
-  cost: number
-  multiplier: number
+  baseCost: number
+  costMultiplier: number
+  bonusPerLevel: number
   icon: string
+}
+
+export interface OwnedUpgrade {
+  definitionId: string
+  level: number
 }
 
 export interface WordEntry {
   display: string
   reading: string
-}
-
-export interface GameState {
-  totalTypes: number
-  typesPerSecond: number
-  globalMultiplier: number
-  engineers: OwnedEngineer[]
-  purchasedUpgradeIds: string[]
 }
