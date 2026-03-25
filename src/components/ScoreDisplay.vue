@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
+const useShortFormat = ref(true)
 
-const displayTotal = computed(() => formatNumber(Math.floor(store.totalTypes)))
-const displayTps = computed(() => formatNumber(store.typesPerSecond))
+function formatScore(value: number): string {
+  if (useShortFormat.value) return formatNumber(value)
+  return Math.floor(value).toLocaleString()
+}
+
+const displayTotal = computed(() => formatScore(store.totalTypes))
+const displayTps = computed(() => formatScore(store.typesPerSecond))
 const displayMultiplier = computed(() => `x${store.globalMultiplier}`)
+
+function toggleFormat(): void {
+  useShortFormat.value = !useShortFormat.value
+}
 </script>
 
 <template>
@@ -26,6 +36,13 @@ const displayMultiplier = computed(() => `x${store.globalMultiplier}`)
         <span class="score-item-label">倍率</span>
       </div>
     </div>
+    <button
+      class="format-toggle"
+      :aria-label="`数値表示を${useShortFormat ? '全桁' : '省略'}に切り替え`"
+      @click="toggleFormat"
+    >
+      {{ useShortFormat ? '123...' : 'K/M' }}
+    </button>
   </div>
 </template>
 
@@ -83,5 +100,24 @@ const displayMultiplier = computed(() => `x${store.globalMultiplier}`)
 .score-item-label {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.5);
+}
+
+.format-toggle {
+  margin-top: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.format-toggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 </style>
