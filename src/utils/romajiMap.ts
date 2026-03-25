@@ -87,6 +87,23 @@ const ROMAJI_MAP: Record<string, string[]> = {
   // 拗音 - ぴゃ行
   'ぴゃ': ['pya'], 'ぴゅ': ['pyu'], 'ぴょ': ['pyo'],
 
+  // 外来語拗音
+  'てぃ': ['thi', 'texi', 'teli'],
+  'でぃ': ['dhi', 'dexi', 'deli'],
+  'ふぁ': ['fa', 'huxa', 'hula'],
+  'ふぃ': ['fi', 'huxi', 'huli'],
+  'ふぇ': ['fe', 'huxe', 'hule'],
+  'ふぉ': ['fo', 'huxo', 'hulo'],
+  'うぇ': ['we', 'uxe', 'ule'],
+  'うぃ': ['wi', 'uxi', 'uli'],
+  'うぉ': ['who', 'uxo', 'ulo'],
+  'つぁ': ['tsa'],
+  'とぅ': ['twu', 'toxu', 'tolu'],
+  'どぅ': ['dwu', 'doxu', 'dolu'],
+  'ちぇ': ['che', 'tye', 'tile'],
+  'しぇ': ['she', 'sye', 'sile'],
+  'じぇ': ['je', 'zye', 'jile'],
+
   // 小文字
   'ぁ': ['xa', 'la'], 'ぃ': ['xi', 'li'], 'ぅ': ['xu', 'lu'],
   'ぇ': ['xe', 'le'], 'ぉ': ['xo', 'lo'],

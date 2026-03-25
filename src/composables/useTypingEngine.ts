@@ -17,7 +17,7 @@ export function useTypingEngine(onType: (count: number) => void) {
   function initWord(): void {
     const word = getRandomWord()
     currentWord.value = word
-    segments.value = toRomajiSegments(word.display)
+    segments.value = toRomajiSegments(word.reading)
     currentSegmentIndex.value = 0
     currentInputInSegment.value = ''
     completedRomaji.value = ''
