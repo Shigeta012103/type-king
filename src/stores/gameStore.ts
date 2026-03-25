@@ -10,6 +10,10 @@ import {
 
 const SAVE_KEY = 'type-king-save'
 const AUTO_TICK_INTERVAL_MS = 100
+const FEVER_INTERVAL_MS = 180_000
+const FEVER_WARN_MS = 5_000
+const FEVER_DURATION_MS = 10_000
+const FEVER_MULTIPLIER = 5
 
 /**
  * エンジニアの桁ボーナス倍率を算出
@@ -47,6 +51,12 @@ export const useGameStore = defineStore('game', () => {
     UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
   )
 
+  // フィーバー状態
+  const isFeverActive = ref(false)
+  const isFeverWarning = ref(false)
+  const feverRemainingMs = ref(0)
+  const nextFeverMs = ref(FEVER_INTERVAL_MS)
+
   // プレイヤーのタイピング倍率（各アップグレードの累計ボーナスの合算）
   const typingMultiplier = computed(() => {
     let bonus = 0
@@ -72,8 +82,13 @@ export const useGameStore = defineStore('game', () => {
     return tps
   })
 
+  const effectiveTypingMultiplier = computed(() => {
+    const fever = isFeverActive.value ? FEVER_MULTIPLIER : 1
+    return typingMultiplier.value * fever
+  })
+
   function addTypes(count: number): void {
-    totalTypes.value += count * typingMultiplier.value
+    totalTypes.value += count * effectiveTypingMultiplier.value
   }
 
   function getEngineerCost(definitionId: string): number {
@@ -135,10 +150,14 @@ export const useGameStore = defineStore('game', () => {
   function startAutoTick(): void {
     if (tickInterval) return
     tickInterval = setInterval(() => {
+      // エンジニア自動タイプ
       const increment = typesPerSecond.value / (1000 / AUTO_TICK_INTERVAL_MS)
       if (increment > 0) {
         totalTypes.value += increment
       }
+
+      // フィーバータイマー更新
+      updateFeverTimer(AUTO_TICK_INTERVAL_MS)
     }, AUTO_TICK_INTERVAL_MS)
   }
 
@@ -146,6 +165,27 @@ export const useGameStore = defineStore('game', () => {
     if (tickInterval) {
       clearInterval(tickInterval)
       tickInterval = null
+    }
+  }
+
+  function updateFeverTimer(elapsedMs: number): void {
+    if (isFeverActive.value) {
+      feverRemainingMs.value = Math.max(0, feverRemainingMs.value - elapsedMs)
+      if (feverRemainingMs.value <= 0) {
+        isFeverActive.value = false
+        nextFeverMs.value = FEVER_INTERVAL_MS
+      }
+      return
+    }
+
+    nextFeverMs.value = Math.max(0, nextFeverMs.value - elapsedMs)
+
+    isFeverWarning.value = !isFeverActive.value && nextFeverMs.value <= FEVER_WARN_MS
+
+    if (nextFeverMs.value <= 0) {
+      isFeverActive.value = true
+      isFeverWarning.value = false
+      feverRemainingMs.value = FEVER_DURATION_MS
     }
   }
 
@@ -214,7 +254,12 @@ export const useGameStore = defineStore('game', () => {
     engineers,
     upgrades,
     typingMultiplier,
+    effectiveTypingMultiplier,
     typesPerSecond,
+    isFeverActive,
+    isFeverWarning,
+    feverRemainingMs,
+    nextFeverMs,
     addTypes,
     getEngineerCost,
     hireEngineer,

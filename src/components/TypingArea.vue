@@ -97,7 +97,7 @@ onUnmounted(() => {
   <div
     ref="areaRef"
     class="typing-area"
-    :class="{ slam: isSlam }"
+    :class="{ slam: isSlam, fever: store.isFeverActive }"
     @animationend="onAnimationEnd"
   >
     <!-- パーティクル -->
@@ -253,5 +253,25 @@ onUnmounted(() => {
   margin-top: 1rem;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.3);
+}
+
+/* フィーバー時のタイピングエリア */
+.typing-area.fever {
+  border-color: rgba(255, 165, 0, 0.6);
+  box-shadow: 0 0 40px rgba(255, 165, 0, 0.3), 0 0 80px rgba(255, 100, 0, 0.1);
+  background: linear-gradient(135deg, #1a1000 0%, #2a1a0e 100%);
+}
+
+.typing-area.fever .word-japanese {
+  color: #ffd700;
+  text-shadow: 0 0 15px rgba(255, 165, 0, 0.5);
+}
+
+.typing-area.fever .romaji-typed {
+  color: #ffa500;
+}
+
+.typing-area.fever .cursor {
+  color: #ffa500;
 }
 </style>
