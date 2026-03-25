@@ -2,13 +2,17 @@ import { ref, computed } from 'vue'
 import { WORD_LIST } from '../constants/words'
 import { toRomajiSegments, type RomajiSegment } from '../utils/romajiMap'
 
-export function useTypingEngine(onType: (count: number) => void) {
+interface TypingEngineCallbacks {
+  onType: (count: number) => void
+  onWordComplete: () => void
+}
+
+export function useTypingEngine(callbacks: TypingEngineCallbacks) {
   const currentWord = ref(getRandomWord())
   const segments = ref<RomajiSegment[]>([])
   const currentSegmentIndex = ref(0)
   const currentInputInSegment = ref('')
   const completedRomaji = ref('')
-  const totalTypedInWord = ref(0)
 
   function getRandomWord() {
     return WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
@@ -21,7 +25,6 @@ export function useTypingEngine(onType: (count: number) => void) {
     currentSegmentIndex.value = 0
     currentInputInSegment.value = ''
     completedRomaji.value = ''
-    totalTypedInWord.value = 0
   }
 
   // 表示用：現在のセグメントの推奨ローマ字
@@ -61,8 +64,7 @@ export function useTypingEngine(onType: (count: number) => void) {
     if (matching.length === 0) return false
 
     currentInputInSegment.value = testInput
-    totalTypedInWord.value++
-    onType(1)
+    callbacks.onType(1)
 
     // セグメント完了チェック
     const exactMatch = matching.find((p) => p === testInput)
@@ -73,6 +75,7 @@ export function useTypingEngine(onType: (count: number) => void) {
 
       // 全セグメント完了 → 次のワードへ
       if (currentSegmentIndex.value >= segments.value.length) {
+        callbacks.onWordComplete()
         initWord()
       }
     }
