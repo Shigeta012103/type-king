@@ -174,9 +174,9 @@ export function toRomajiSegments(text: string): RomajiSegment[] {
         }
         const nextPatterns = ROMAJI_MAP[nextTwoChar] ?? ROMAJI_MAP[nextChar]
         if (nextPatterns) {
-          // 子音を重ねるパターンを生成
+          // 次の子音の先頭1文字（次セグメントと合わせて子音が重なる）
           const doubledPatterns = nextPatterns
-            .map((p) => p[0] + p[0])
+            .map((p) => p[0])
             .filter((p, idx, arr) => arr.indexOf(p) === idx)
 
           const basePatterns = ROMAJI_MAP['っ']
