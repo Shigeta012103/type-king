@@ -12,7 +12,9 @@ const upgradeItems = computed(() =>
     const level = owned?.level ?? 0
     const cost = store.getUpgradeCost(def.id)
     const canAfford = store.totalTypes >= cost
-    return { ...def, level, cost, canAfford }
+    const nextBonus = store.getUpgradeNextBonus(def.id)
+    const totalBonus = store.getUpgradeTotalBonus(def.id)
+    return { ...def, level, cost, canAfford, nextBonus, totalBonus }
   })
 )
 
@@ -35,7 +37,7 @@ function purchase(definitionId: string): void {
         class="upgrade-card"
         :class="{ affordable: upgrade.canAfford, owned: upgrade.level > 0 }"
         :disabled="!upgrade.canAfford"
-        :aria-label="`${upgrade.name}を購入 Lv.${upgrade.level} コスト${upgrade.cost}タイプ 効果:${upgrade.description}`"
+        :aria-label="`${upgrade.name}を購入 Lv.${upgrade.level} コスト${upgrade.cost}タイプ`"
         @click="purchase(upgrade.id)"
       >
         <span class="upgrade-icon" aria-hidden="true">{{ upgrade.icon }}</span>
@@ -47,6 +49,14 @@ function purchase(definitionId: string): void {
             </span>
           </div>
           <span class="upgrade-desc">{{ upgrade.description }}</span>
+          <div class="upgrade-bonus-row">
+            <span class="upgrade-next-bonus">
+              次: +{{ formatNumber(upgrade.nextBonus) }}
+            </span>
+            <span class="upgrade-current-bonus" v-if="upgrade.totalBonus > 0">
+              現在: +{{ formatNumber(upgrade.totalBonus) }}
+            </span>
+          </div>
         </div>
         <span class="upgrade-cost" :class="{ affordable: upgrade.canAfford }">
           {{ formatNumber(upgrade.cost) }}
@@ -136,6 +146,7 @@ function purchase(definitionId: string): void {
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  gap: 0.15rem;
 }
 
 .upgrade-name-row {
@@ -160,8 +171,23 @@ function purchase(definitionId: string): void {
 }
 
 .upgrade-desc {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.upgrade-bonus-row {
+  display: flex;
+  gap: 0.5rem;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+}
+
+.upgrade-next-bonus {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.upgrade-current-bonus {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .upgrade-cost {

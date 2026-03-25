@@ -2,7 +2,11 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { OwnedEngineer, OwnedUpgrade } from '../types/game'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
-import { UPGRADE_DEFINITIONS } from '../constants/upgrades'
+import {
+  UPGRADE_DEFINITIONS,
+  LEVEL_POWER_GROWTH,
+  LEVEL_COST_GROWTH,
+} from '../constants/upgrades'
 
 const SAVE_KEY = 'type-king-save'
 const AUTO_TICK_INTERVAL_MS = 100
@@ -10,12 +14,28 @@ const AUTO_TICK_INTERVAL_MS = 100
 /**
  * エンジニアの桁ボーナス倍率を算出
  * 10人ごとに+10%、100人で+30%、1000人で+60%...
- * 緩やかなボーナスにして急激なインフレを防ぐ
  */
 function calcEngineerDigitBonus(count: number): number {
   if (count < 10) return 1
   const digits = Math.floor(Math.log10(count))
   return 1 + digits * 0.3
+}
+
+/**
+ * アップグレードのレベルLにおけるボーナスを算出
+ * Lv.1: basePower, Lv.2: basePower * 2000, Lv.3: basePower * 2000^2...
+ */
+function calcLevelBonus(basePower: number, level: number): number {
+  return basePower * Math.pow(LEVEL_POWER_GROWTH, level - 1)
+}
+
+/**
+ * アップグレードの累計ボーナスを算出（Lv.1〜levelの合計）
+ */
+function calcTotalUpgradeBonus(basePower: number, level: number): number {
+  if (level === 0) return 0
+  if (level === 1) return basePower
+  return basePower * (Math.pow(LEVEL_POWER_GROWTH, level) - 1) / (LEVEL_POWER_GROWTH - 1)
 }
 
 export const useGameStore = defineStore('game', () => {
@@ -27,14 +47,14 @@ export const useGameStore = defineStore('game', () => {
     UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
   )
 
-  // プレイヤーのタイピング倍率（アップグレードで加算式に強化）
+  // プレイヤーのタイピング倍率（各アップグレードの累計ボーナスの合算）
   const typingMultiplier = computed(() => {
     let bonus = 0
     for (const owned of upgrades.value) {
       if (owned.level === 0) continue
       const def = UPGRADE_DEFINITIONS.find((d) => d.id === owned.definitionId)
       if (def) {
-        bonus += def.bonusPerLevel * owned.level
+        bonus += calcTotalUpgradeBonus(def.basePower, owned.level)
       }
     }
     return 1 + bonus
@@ -80,7 +100,21 @@ export const useGameStore = defineStore('game', () => {
     const def = UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
     const owned = upgrades.value.find((u) => u.definitionId === definitionId)
     if (!def || !owned) return Infinity
-    return Math.floor(def.baseCost * Math.pow(def.costMultiplier, owned.level))
+    return Math.floor(def.baseCost * Math.pow(LEVEL_COST_GROWTH, owned.level))
+  }
+
+  function getUpgradeNextBonus(definitionId: string): number {
+    const def = UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
+    const owned = upgrades.value.find((u) => u.definitionId === definitionId)
+    if (!def || !owned) return 0
+    return calcLevelBonus(def.basePower, owned.level + 1)
+  }
+
+  function getUpgradeTotalBonus(definitionId: string): number {
+    const def = UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
+    const owned = upgrades.value.find((u) => u.definitionId === definitionId)
+    if (!def || !owned) return 0
+    return calcTotalUpgradeBonus(def.basePower, owned.level)
   }
 
   function purchaseUpgrade(definitionId: string): boolean {
@@ -159,18 +193,6 @@ export const useGameStore = defineStore('game', () => {
         }
       }
 
-      // 旧セーブデータからの移行（purchasedUpgradeIds形式）
-      if (Array.isArray(saveData.purchasedUpgradeIds)) {
-        for (const upgradeId of saveData.purchasedUpgradeIds) {
-          const owned = upgrades.value.find(
-            (u) => u.definitionId === upgradeId
-          )
-          if (owned && owned.level === 0) {
-            owned.level = 1
-          }
-        }
-      }
-
       // オフライン中の自動タイプ分を加算
       if (saveData.savedAt) {
         const elapsedSeconds = (Date.now() - saveData.savedAt) / 1000
@@ -197,6 +219,8 @@ export const useGameStore = defineStore('game', () => {
     getEngineerCost,
     hireEngineer,
     getUpgradeCost,
+    getUpgradeNextBonus,
+    getUpgradeTotalBonus,
     purchaseUpgrade,
     startAutoTick,
     stopAutoTick,

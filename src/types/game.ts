@@ -17,9 +17,8 @@ export interface UpgradeDefinition {
   id: string
   name: string
   description: string
+  basePower: number
   baseCost: number
-  costMultiplier: number
-  bonusPerLevel: number
   icon: string
 }
 
