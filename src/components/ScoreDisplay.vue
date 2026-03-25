@@ -4,7 +4,7 @@ import { useGameStore } from '../stores/gameStore'
 import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
-const useShortFormat = ref(true)
+const useShortFormat = ref(false)
 
 function formatScore(value: number): string {
   if (useShortFormat.value) return formatNumber(value)
