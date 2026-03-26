@@ -146,19 +146,34 @@ export const useGameStore = defineStore('game', () => {
   }
 
   let tickInterval: ReturnType<typeof setInterval> | null = null
+  let lastTickTime = 0
+
+  function tick(): void {
+    const now = performance.now()
+    const elapsedMs = lastTickTime > 0 ? Math.min(now - lastTickTime, 60_000) : AUTO_TICK_INTERVAL_MS
+    lastTickTime = now
+
+    // エンジニア自動タイプ（実際の経過時間で計算）
+    const increment = typesPerSecond.value * (elapsedMs / 1000)
+    if (increment > 0) {
+      totalTypes.value += increment
+    }
+
+    // フィーバータイマー更新
+    updateFeverTimer(elapsedMs)
+  }
+
+  function onVisibilityChange(): void {
+    if (document.visibilityState === 'visible') {
+      tick()
+    }
+  }
 
   function startAutoTick(): void {
     if (tickInterval) return
-    tickInterval = setInterval(() => {
-      // エンジニア自動タイプ
-      const increment = typesPerSecond.value / (1000 / AUTO_TICK_INTERVAL_MS)
-      if (increment > 0) {
-        totalTypes.value += increment
-      }
-
-      // フィーバータイマー更新
-      updateFeverTimer(AUTO_TICK_INTERVAL_MS)
-    }, AUTO_TICK_INTERVAL_MS)
+    lastTickTime = performance.now()
+    tickInterval = setInterval(tick, AUTO_TICK_INTERVAL_MS)
+    document.addEventListener('visibilitychange', onVisibilityChange)
   }
 
   function stopAutoTick(): void {
@@ -166,6 +181,7 @@ export const useGameStore = defineStore('game', () => {
       clearInterval(tickInterval)
       tickInterval = null
     }
+    document.removeEventListener('visibilitychange', onVisibilityChange)
   }
 
   function updateFeverTimer(elapsedMs: number): void {
