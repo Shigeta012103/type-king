@@ -13,7 +13,7 @@ const AUTO_TICK_INTERVAL_MS = 100
 const FEVER_INTERVAL_MS = 60_000
 const FEVER_WARN_MS = 5_000
 const FEVER_DURATION_MS = 30_000
-const FEVER_MULTIPLIER = 10
+const FEVER_MULTIPLIER = 3
 
 /**
  * エンジニアの桁ボーナス倍率を算出
