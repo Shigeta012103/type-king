@@ -10,10 +10,10 @@ import {
 
 const SAVE_KEY = 'type-king-save'
 const AUTO_TICK_INTERVAL_MS = 100
-const FEVER_INTERVAL_MS = 180_000
+const FEVER_INTERVAL_MS = 60_000
 const FEVER_WARN_MS = 5_000
-const FEVER_DURATION_MS = 10_000
-const FEVER_MULTIPLIER = 5
+const FEVER_DURATION_MS = 30_000
+const FEVER_MULTIPLIER = 10
 
 /**
  * エンジニアの桁ボーナス倍率を算出
