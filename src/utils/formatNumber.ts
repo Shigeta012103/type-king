@@ -1,9 +1,9 @@
 const SUFFIXES = [
-  { threshold: 1e15, suffix: 'Q' },
-  { threshold: 1e12, suffix: 'T' },
-  { threshold: 1e9, suffix: 'B' },
-  { threshold: 1e6, suffix: 'M' },
-  { threshold: 1e3, suffix: 'K' },
+  { threshold: 1e16, suffix: '京' },
+  { threshold: 1e12, suffix: '兆' },
+  { threshold: 1e8, suffix: '億' },
+  { threshold: 1e4, suffix: '万' },
+  { threshold: 1e3, suffix: '千' },
 ] as const
 
 export function formatNumber(value: number): string {
