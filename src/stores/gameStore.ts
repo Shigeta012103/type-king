@@ -78,8 +78,9 @@ export const useGameStore = defineStore('game', () => {
   const feverCooldownMs = computed(() =>
     Math.max(MIN_FEVER_COOLDOWN_MS, BASE_FEVER_INTERVAL_MS - feverCooldownLevel.value * 5000)
   )
-  const feverAutoRate = computed(() =>
-    Math.min(feverSyncLevel.value * 0.5, 3)
+  // シンクロ: Lv.1=33%, Lv.2=66%, Lv.3+=100% のフィーバー倍率を自動タイプに適用
+  const feverSyncRate = computed(() =>
+    Math.min(feverSyncLevel.value / 3, 1)
   )
 
   // タイピング倍率
@@ -113,8 +114,8 @@ export const useGameStore = defineStore('game', () => {
   })
 
   const effectiveTpsMultiplier = computed(() => {
-    if (!isFeverActive.value || feverAutoRate.value === 0) return 1
-    return 1 + feverAutoRate.value
+    if (!isFeverActive.value || feverSyncRate.value === 0) return 1
+    return 1 + (feverMultiplier.value - 1) * feverSyncRate.value
   })
 
   function addTypes(count: number): void {
@@ -364,7 +365,7 @@ export const useGameStore = defineStore('game', () => {
     feverMultiplier,
     feverDurationMs,
     feverCooldownMs,
-    feverAutoRate,
+    feverSyncRate,
     nextFeverMs,
     canIpo,
     doIpo,

@@ -36,9 +36,9 @@ function purchase(definitionId: string): void {
         <span class="status-label">間隔</span>
         <span class="status-value">{{ store.feverCooldownMs / 1000 }}秒</span>
       </div>
-      <div class="status-row" v-if="store.feverAutoRate > 0">
+      <div class="status-row" v-if="store.feverSyncRate > 0">
         <span class="status-label">自動</span>
-        <span class="status-value">x{{ (1 + store.feverAutoRate).toFixed(1) }}</span>
+        <span class="status-value">{{ Math.round(store.feverSyncRate * 100) }}%</span>
       </div>
     </div>
     <div class="fever-list">
