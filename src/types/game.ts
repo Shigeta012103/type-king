@@ -6,6 +6,7 @@ export interface EngineerDefinition {
   baseCost: number
   costMultiplier: number
   icon: string
+  requiresIpo: boolean
 }
 
 export interface OwnedEngineer {
@@ -20,9 +21,24 @@ export interface UpgradeDefinition {
   basePower: number
   baseCost: number
   icon: string
+  requiresIpo: boolean
 }
 
 export interface OwnedUpgrade {
+  definitionId: string
+  level: number
+}
+
+export interface FeverUpgradeDefinition {
+  id: string
+  name: string
+  description: string
+  baseCost: number
+  costGrowth: number
+  icon: string
+}
+
+export interface OwnedFeverUpgrade {
   definitionId: string
   level: number
 }

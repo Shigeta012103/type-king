@@ -14,13 +14,14 @@ function calcDigitBonus(count: number): number {
 
 const engineerItems = computed(() =>
   ENGINEER_DEFINITIONS.map((def) => {
+    const locked = def.requiresIpo && !store.isIpoed
     const owned = store.engineers.find((e) => e.definitionId === def.id)
     const count = owned?.count ?? 0
     const cost = store.getEngineerCost(def.id)
-    const canAfford = store.totalTypes >= cost
+    const canAfford = !locked && store.totalTypes >= cost
     const digitBonus = calcDigitBonus(count)
     const effectiveTps = def.typesPerSecond * count * digitBonus
-    return { ...def, count, cost, canAfford, digitBonus, effectiveTps }
+    return { ...def, count, cost, canAfford, digitBonus, effectiveTps, locked }
   })
 )
 
@@ -40,35 +41,52 @@ function hire(definitionId: string): void {
         v-for="eng in engineerItems"
         :key="eng.id"
         class="engineer-card"
-        :class="{ affordable: eng.canAfford, owned: eng.count > 0 }"
+        :class="{
+          affordable: eng.canAfford,
+          owned: eng.count > 0,
+          locked: eng.locked,
+        }"
         :disabled="!eng.canAfford"
-        :aria-label="`${eng.name}を雇用 コスト${eng.cost}タイプ 現在${eng.count}人`"
+        :aria-label="eng.locked
+          ? '上場後に解放される'
+          : `${eng.name}を雇用 コスト${eng.cost}タイプ 現在${eng.count}人`"
         @click="hire(eng.id)"
       >
-        <div class="engineer-header">
-          <span class="engineer-icon" aria-hidden="true">{{ eng.icon }}</span>
-          <div class="engineer-info">
-            <span class="engineer-name">{{ eng.name }}</span>
-            <span class="engineer-desc">{{ eng.description }}</span>
+        <template v-if="eng.locked">
+          <div class="engineer-header">
+            <span class="engineer-icon locked-icon" aria-hidden="true">❓</span>
+            <div class="engineer-info">
+              <span class="engineer-name locked-text">？？？</span>
+              <span class="engineer-desc locked-text">上場後に解放</span>
+            </div>
           </div>
-          <span class="engineer-count" v-if="eng.count > 0">
-            {{ eng.count }}
-          </span>
-        </div>
-        <div class="engineer-footer">
-          <div class="engineer-tps-info">
-            <span class="engineer-tps">{{ eng.typesPerSecond }}/秒</span>
-            <span class="engineer-bonus" v-if="eng.digitBonus > 1">
-              x{{ eng.digitBonus.toFixed(1) }}
-            </span>
-            <span class="engineer-total-tps" v-if="eng.count > 0">
-              計{{ formatNumber(eng.effectiveTps) }}/秒
+        </template>
+        <template v-else>
+          <div class="engineer-header">
+            <span class="engineer-icon" aria-hidden="true">{{ eng.icon }}</span>
+            <div class="engineer-info">
+              <span class="engineer-name">{{ eng.name }}</span>
+              <span class="engineer-desc">{{ eng.description }}</span>
+            </div>
+            <span class="engineer-count" v-if="eng.count > 0">
+              {{ eng.count }}
             </span>
           </div>
-          <span class="engineer-cost" :class="{ affordable: eng.canAfford }">
-            {{ formatNumber(eng.cost) }} タイプ
-          </span>
-        </div>
+          <div class="engineer-footer">
+            <div class="engineer-tps-info">
+              <span class="engineer-tps">{{ eng.typesPerSecond }}/秒</span>
+              <span class="engineer-bonus" v-if="eng.digitBonus > 1">
+                x{{ eng.digitBonus.toFixed(1) }}
+              </span>
+              <span class="engineer-total-tps" v-if="eng.count > 0">
+                計{{ formatNumber(eng.effectiveTps) }}/秒
+              </span>
+            </div>
+            <span class="engineer-cost" :class="{ affordable: eng.canAfford }">
+              {{ formatNumber(eng.cost) }} タイプ
+            </span>
+          </div>
+        </template>
       </button>
     </div>
   </div>
@@ -137,6 +155,18 @@ function hire(definitionId: string): void {
   background: rgba(0, 210, 255, 0.05);
 }
 
+.engineer-card.locked {
+  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.02);
+  border-style: dashed;
+}
+
+.engineer-card.locked:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .engineer-header {
   display: flex;
   align-items: center;
@@ -146,6 +176,10 @@ function hire(definitionId: string): void {
 .engineer-icon {
   font-size: 1.5rem;
   flex-shrink: 0;
+}
+
+.locked-icon {
+  opacity: 0.5;
 }
 
 .engineer-info {
@@ -164,6 +198,10 @@ function hire(definitionId: string): void {
 .engineer-desc {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.5);
+}
+
+.locked-text {
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .engineer-count {

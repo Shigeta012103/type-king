@@ -1,6 +1,7 @@
 import type { EngineerDefinition } from '../types/game'
 
 export const ENGINEER_DEFINITIONS: EngineerDefinition[] = [
+  // --- 上場前 ---
   {
     id: 'assistant',
     name: 'アシスタント',
@@ -9,6 +10,7 @@ export const ENGINEER_DEFINITIONS: EngineerDefinition[] = [
     baseCost: 100,
     costMultiplier: 1.12,
     icon: '👶',
+    requiresIpo: false,
   },
   {
     id: 'junior',
@@ -18,6 +20,7 @@ export const ENGINEER_DEFINITIONS: EngineerDefinition[] = [
     baseCost: 1500,
     costMultiplier: 1.14,
     icon: '🧑‍💻',
+    requiresIpo: false,
   },
   {
     id: 'middle',
@@ -27,6 +30,7 @@ export const ENGINEER_DEFINITIONS: EngineerDefinition[] = [
     baseCost: 30000,
     costMultiplier: 1.16,
     icon: '💻',
+    requiresIpo: false,
   },
   {
     id: 'senior',
@@ -36,6 +40,7 @@ export const ENGINEER_DEFINITIONS: EngineerDefinition[] = [
     baseCost: 800000,
     costMultiplier: 1.18,
     icon: '🔥',
+    requiresIpo: false,
   },
   {
     id: 'expert',
@@ -45,5 +50,58 @@ export const ENGINEER_DEFINITIONS: EngineerDefinition[] = [
     baseCost: 30000000,
     costMultiplier: 1.20,
     icon: '👑',
+    requiresIpo: false,
+  },
+
+  // --- 上場後 ---
+  {
+    id: 'robot',
+    name: 'タイピングロボ',
+    description: '疲れ知らずの機械タイパー',
+    typesPerSecond: 1200,
+    baseCost: 200000000,
+    costMultiplier: 1.18,
+    icon: '🦾',
+    requiresIpo: true,
+  },
+  {
+    id: 'wizard',
+    name: '魔法使い',
+    description: '詠唱でキーボードを自動操作する',
+    typesPerSecond: 5000,
+    baseCost: 3000000000,
+    costMultiplier: 1.20,
+    icon: '🧙',
+    requiresIpo: true,
+  },
+  {
+    id: 'dragon',
+    name: 'ドラゴン',
+    description: '炎のブレスでキーを叩く',
+    typesPerSecond: 20000,
+    baseCost: 50000000000,
+    costMultiplier: 1.22,
+    icon: '🐉',
+    requiresIpo: true,
+  },
+  {
+    id: 'time-lord',
+    name: '時の魔術師',
+    description: '時間を操りタイピング速度を超越する',
+    typesPerSecond: 80000,
+    baseCost: 800000000000,
+    costMultiplier: 1.24,
+    icon: '⏳',
+    requiresIpo: true,
+  },
+  {
+    id: 'god',
+    name: '神様',
+    description: '全知全能のタイピング、思念が文字になる',
+    typesPerSecond: 350000,
+    baseCost: 20000000000000,
+    costMultiplier: 1.25,
+    icon: '🌟',
+    requiresIpo: true,
   },
 ]
