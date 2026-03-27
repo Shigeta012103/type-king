@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useGameStore } from './stores/gameStore'
 import { formatNumber } from './utils/formatNumber'
 import ScoreDisplay from './components/ScoreDisplay.vue'
 import TypingArea from './components/TypingArea.vue'
 import EngineerPanel from './components/EngineerPanel.vue'
 import UpgradePanel from './components/UpgradePanel.vue'
+import FeverPanel from './components/FeverPanel.vue'
+
+type SideTab = 'engineers' | 'upgrades' | 'fever'
 
 const store = useGameStore()
+const activeTab = ref<SideTab>('engineers')
 const IPO_COST_DISPLAY = formatNumber(1_000_000_000)
 
 function handleIpo(): void {
@@ -59,9 +63,43 @@ onUnmounted(() => {
           </span>
         </button>
       </div>
-      <aside class="side-column">
-        <EngineerPanel />
-        <UpgradePanel />
+
+      <!-- サイドパネル（タブ式） -->
+      <aside class="side-panel">
+        <nav class="tab-bar" role="tablist" aria-label="サイドパネルタブ">
+          <button
+            role="tab"
+            class="tab-button"
+            :class="{ active: activeTab === 'engineers' }"
+            :aria-selected="activeTab === 'engineers'"
+            @click="activeTab = 'engineers'"
+          >
+            👥 雇用
+          </button>
+          <button
+            role="tab"
+            class="tab-button"
+            :class="{ active: activeTab === 'upgrades' }"
+            :aria-selected="activeTab === 'upgrades'"
+            @click="activeTab = 'upgrades'"
+          >
+            ⬆️ 強化
+          </button>
+          <button
+            role="tab"
+            class="tab-button"
+            :class="{ active: activeTab === 'fever' }"
+            :aria-selected="activeTab === 'fever'"
+            @click="activeTab = 'fever'"
+          >
+            🔥 FEVER
+          </button>
+        </nav>
+        <div class="tab-content" role="tabpanel">
+          <EngineerPanel v-show="activeTab === 'engineers'" />
+          <UpgradePanel v-show="activeTab === 'upgrades'" />
+          <FeverPanel v-show="activeTab === 'fever'" />
+        </div>
       </aside>
     </main>
   </div>
@@ -72,12 +110,15 @@ onUnmounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-header {
   text-align: center;
-  padding: 1rem 0 1.5rem;
+  padding: 0.75rem 0 1rem;
+  flex-shrink: 0;
 }
 
 .game-title {
@@ -114,6 +155,8 @@ onUnmounted(() => {
   grid-template-columns: 1fr 380px;
   gap: 1.5rem;
   align-items: start;
+  flex: 1;
+  min-height: 0;
 }
 
 .center-column {
@@ -122,10 +165,61 @@ onUnmounted(() => {
   gap: 1.5rem;
 }
 
-.side-column {
+/* サイドパネル */
+.side-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: calc(100vh - 5rem);
+  overflow: hidden;
+}
+
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab-button:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tab-button.active {
+  color: #fff;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: linear-gradient(90deg, #00d2ff, #7b2ff7);
+  border-radius: 1px;
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
 }
 
 /* 上場ボタン */
@@ -204,6 +298,10 @@ onUnmounted(() => {
 @media (max-width: 900px) {
   .game-main {
     grid-template-columns: 1fr;
+  }
+
+  .side-panel {
+    max-height: 50vh;
   }
 }
 </style>

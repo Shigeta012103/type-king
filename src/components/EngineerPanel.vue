@@ -32,10 +32,7 @@ function hire(definitionId: string): void {
 
 <template>
   <div class="engineer-panel">
-    <h2 class="panel-title">
-      <span class="panel-icon" aria-hidden="true">👥</span>
-      エンジニア雇用
-    </h2>
+    <!-- タイトルはタブで表示 -->
     <div class="engineer-list">
       <button
         v-for="eng in engineerItems"
@@ -94,24 +91,7 @@ function hire(definitionId: string): void {
 
 <style scoped>
 .engineer-panel {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border-radius: 16px;
-  padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.panel-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.panel-icon {
-  font-size: 1.25rem;
+  /* パネル外枠はApp.vueのside-panelで管理 */
 }
 
 .engineer-list {
