@@ -18,6 +18,14 @@ export const FEVER_UPGRADE_DEFINITIONS: FeverUpgradeDefinition[] = [
     icon: '⏱️',
   },
   {
+    id: 'fever-cooldown',
+    name: 'フィーバー加速',
+    description: 'クールタイム-5秒（最短15秒）',
+    baseCost: 10000000,
+    costGrowth: 8,
+    icon: '⚡',
+  },
+  {
     id: 'fever-sync',
     name: 'フィーバーシンクロ',
     description: 'フィーバーが自動タイプにも効く(+50%ずつ)',

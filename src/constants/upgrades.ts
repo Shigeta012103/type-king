@@ -3,11 +3,16 @@ import type { UpgradeDefinition } from '../types/game'
 /**
  * レベルアップ時のスケーリング定数
  *
- * パワー成長: 各レベルで2000倍 → レベルアップが強力に感じる
- * コスト成長: 各レベルで5000倍 → 高ティアの方がコスパが良い
+ * パワー成長: 各レベルで15倍 → 着実にパワーアップ
+ * コスト成長: 各レベルで50倍 → コスト上昇の方が急でインフレ抑制
+ *
+ * バランス目安（上場前全Lv.1）:
+ *   タイプ倍率 ~4,500 → 手動タイピング ~13,500/秒（3打鍵/秒想定）
+ *   エンジニア自動 ~5,000/秒
+ *   → 手動:自動 ≈ 2.7:1（手動が優位だが自動も意味がある）
  */
-export const LEVEL_POWER_GROWTH = 2000
-export const LEVEL_COST_GROWTH = 5000
+export const LEVEL_POWER_GROWTH = 15
+export const LEVEL_COST_GROWTH = 50
 
 export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   // --- 上場前 ---
@@ -71,7 +76,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'drill',
     name: 'ドリル',
     description: '天を突くドリルでキーを貫く',
-    basePower: 15000,
+    basePower: 1000,
     baseCost: 500000000,
     icon: '🔩',
     requiresIpo: true,
@@ -80,7 +85,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'cheat-code',
     name: 'チートコード',
     description: '上上下下左右左右BA',
-    basePower: 70000,
+    basePower: 3000,
     baseCost: 8000000000,
     icon: '🎮',
     requiresIpo: true,
@@ -89,7 +94,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'matrix',
     name: 'マトリックス接続',
     description: '仮想世界から直接入力',
-    basePower: 350000,
+    basePower: 8000,
     baseCost: 100000000000,
     icon: '💊',
     requiresIpo: true,
@@ -98,7 +103,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'time-warp',
     name: 'タイムワープ',
     description: '未来の自分がもう打ち終わっている',
-    basePower: 1800000,
+    basePower: 25000,
     baseCost: 2000000000000,
     icon: '⏰',
     requiresIpo: true,
@@ -107,7 +112,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'divine-touch',
     name: '神の一撃',
     description: '一打で宇宙が震える',
-    basePower: 10000000,
+    basePower: 80000,
     baseCost: 50000000000000,
     icon: '⚡',
     requiresIpo: true,

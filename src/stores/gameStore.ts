@@ -60,15 +60,23 @@ export const useGameStore = defineStore('game', () => {
   const feverExtendLevel = computed(() =>
     feverUpgrades.value.find((u) => u.definitionId === 'fever-extend')?.level ?? 0
   )
+  const feverCooldownLevel = computed(() =>
+    feverUpgrades.value.find((u) => u.definitionId === 'fever-cooldown')?.level ?? 0
+  )
   const feverSyncLevel = computed(() =>
     feverUpgrades.value.find((u) => u.definitionId === 'fever-sync')?.level ?? 0
   )
+
+  const MIN_FEVER_COOLDOWN_MS = 15_000
 
   const feverMultiplier = computed(() =>
     BASE_FEVER_MULTIPLIER + feverBoostLevel.value
   )
   const feverDurationMs = computed(() =>
     BASE_FEVER_DURATION_MS + feverExtendLevel.value * 5000
+  )
+  const feverCooldownMs = computed(() =>
+    Math.max(MIN_FEVER_COOLDOWN_MS, BASE_FEVER_INTERVAL_MS - feverCooldownLevel.value * 5000)
   )
   const feverAutoRate = computed(() =>
     Math.min(feverSyncLevel.value * 0.5, 3)
@@ -251,7 +259,7 @@ export const useGameStore = defineStore('game', () => {
       feverRemainingMs.value = Math.max(0, feverRemainingMs.value - elapsedMs)
       if (feverRemainingMs.value <= 0) {
         isFeverActive.value = false
-        nextFeverMs.value = BASE_FEVER_INTERVAL_MS
+        nextFeverMs.value = feverCooldownMs.value
       }
       return
     }
@@ -355,6 +363,7 @@ export const useGameStore = defineStore('game', () => {
     feverRemainingMs,
     feverMultiplier,
     feverDurationMs,
+    feverCooldownMs,
     feverAutoRate,
     nextFeverMs,
     canIpo,

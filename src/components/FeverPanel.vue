@@ -32,8 +32,12 @@ function purchase(definitionId: string): void {
         <span class="status-label">持続</span>
         <span class="status-value">{{ store.feverDurationMs / 1000 }}秒</span>
       </div>
+      <div class="status-row">
+        <span class="status-label">間隔</span>
+        <span class="status-value">{{ store.feverCooldownMs / 1000 }}秒</span>
+      </div>
       <div class="status-row" v-if="store.feverAutoRate > 0">
-        <span class="status-label">自動タイプ</span>
+        <span class="status-label">自動</span>
         <span class="status-value">x{{ (1 + store.feverAutoRate).toFixed(1) }}</span>
       </div>
     </div>
