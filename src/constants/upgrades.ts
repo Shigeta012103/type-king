@@ -72,11 +72,13 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   },
 
   // --- 上場後 ---
+  // 各ティアのLv.1が同コスト帯の既存アップグレードLv.N+1と同等以上になるよう設計
+  // Drill(5億) ≈ Neural Link Lv.2(5億で+28K) → basePower 30,000
   {
     id: 'drill',
     name: 'ドリル',
     description: '天を突くドリルでキーを貫く',
-    basePower: 1000,
+    basePower: 30000,
     baseCost: 500000000,
     icon: '🔩',
     requiresIpo: true,
@@ -85,7 +87,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'cheat-code',
     name: 'チートコード',
     description: '上上下下左右左右BA',
-    basePower: 3000,
+    basePower: 150000,
     baseCost: 8000000000,
     icon: '🎮',
     requiresIpo: true,
@@ -94,7 +96,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'matrix',
     name: 'マトリックス接続',
     description: '仮想世界から直接入力',
-    basePower: 8000,
+    basePower: 500000,
     baseCost: 100000000000,
     icon: '💊',
     requiresIpo: true,
@@ -103,7 +105,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'time-warp',
     name: 'タイムワープ',
     description: '未来の自分がもう打ち終わっている',
-    basePower: 25000,
+    basePower: 2000000,
     baseCost: 2000000000000,
     icon: '⏰',
     requiresIpo: true,
@@ -112,7 +114,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: 'divine-touch',
     name: '神の一撃',
     description: '一打で宇宙が震える',
-    basePower: 80000,
+    basePower: 8000000,
     baseCost: 50000000000000,
     icon: '⚡',
     requiresIpo: true,
