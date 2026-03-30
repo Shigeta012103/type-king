@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { OwnedEngineer, OwnedUpgrade, OwnedFeverUpgrade } from '../types/game'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
+import { calcAllEngineerBonuses } from '../utils/engineerBonus'
 import {
   UPGRADE_DEFINITIONS,
   LEVEL_POWER_GROWTH,
@@ -16,12 +17,6 @@ const BASE_FEVER_INTERVAL_MS = 60_000
 const BASE_FEVER_WARN_MS = 5_000
 const BASE_FEVER_DURATION_MS = 30_000
 const BASE_FEVER_MULTIPLIER = 3
-
-function calcEngineerDigitBonus(count: number): number {
-  if (count < 10) return 1
-  const digits = Math.floor(Math.log10(count))
-  return 1 + digits * 0.5
-}
 
 function calcLevelBonus(basePower: number, level: number): number {
   return basePower * Math.pow(LEVEL_POWER_GROWTH, level - 1)
@@ -101,17 +96,13 @@ export const useGameStore = defineStore('game', () => {
     return typingMultiplier.value * fever
   })
 
-  const typesPerSecond = computed(() => {
-    let tps = 0
-    for (const owned of engineers.value) {
-      const def = ENGINEER_DEFINITIONS.find((d) => d.id === owned.definitionId)
-      if (def && owned.count > 0) {
-        const digitBonus = calcEngineerDigitBonus(owned.count)
-        tps += def.typesPerSecond * owned.count * digitBonus
-      }
-    }
-    return tps
-  })
+  const engineerBonusSummary = computed(() =>
+    calcAllEngineerBonuses(engineers.value)
+  )
+
+  const typesPerSecond = computed(() =>
+    engineerBonusSummary.value.totalTps
+  )
 
   const effectiveTpsMultiplier = computed(() => {
     if (!isFeverActive.value || feverSyncRate.value === 0) return 1
@@ -358,6 +349,7 @@ export const useGameStore = defineStore('game', () => {
     typingMultiplier,
     effectiveTypingMultiplier,
     typesPerSecond,
+    engineerBonusSummary,
     effectiveTpsMultiplier,
     isFeverActive,
     isFeverWarning,

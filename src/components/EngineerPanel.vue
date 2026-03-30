@@ -6,24 +6,23 @@ import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
 
-function calcDigitBonus(count: number): number {
-  if (count < 10) return 1
-  const digits = Math.floor(Math.log10(count))
-  return 1 + digits * 0.5
-}
-
-const engineerItems = computed(() =>
-  ENGINEER_DEFINITIONS.map((def) => {
+const engineerItems = computed(() => {
+  const summary = store.engineerBonusSummary
+  return ENGINEER_DEFINITIONS.map((def) => {
     const locked = def.requiresIpo && !store.isIpoed
     const owned = store.engineers.find((e) => e.definitionId === def.id)
     const count = owned?.count ?? 0
     const cost = store.getEngineerCost(def.id)
     const canAfford = !locked && store.totalTypes >= cost
-    const digitBonus = calcDigitBonus(count)
-    const effectiveTps = def.typesPerSecond * count * digitBonus
-    return { ...def, count, cost, canAfford, digitBonus, effectiveTps, locked }
+    const detail = summary.engineers.find((d) => d.definitionId === def.id)
+    const synergyBonus = detail?.synergyBonus ?? 0
+    const effectiveTps = detail?.effectiveTps ?? 0
+    return { ...def, count, cost, canAfford, synergyBonus, effectiveTps, locked }
   })
-)
+})
+
+const milestoneBonus = computed(() => store.engineerBonusSummary.milestoneBonus)
+const milestoneCount = computed(() => store.engineerBonusSummary.milestoneCount)
 
 function hire(definitionId: string): void {
   store.hireEngineer(definitionId)
@@ -32,7 +31,14 @@ function hire(definitionId: string): void {
 
 <template>
   <div class="engineer-panel">
-    <!-- タイトルはタブで表示 -->
+    <!-- マイルストーンボーナス表示 -->
+    <div class="milestone-bar" v-if="milestoneCount > 0">
+      <span class="milestone-icon" aria-hidden="true">🏆</span>
+      <span class="milestone-text">
+        マイルストーン {{ milestoneCount }}個達成
+      </span>
+      <span class="milestone-value">全体 +{{ Math.round(milestoneBonus * 100) }}%</span>
+    </div>
     <div class="engineer-list">
       <button
         v-for="eng in engineerItems"
@@ -72,8 +78,8 @@ function hire(definitionId: string): void {
           <div class="engineer-footer">
             <div class="engineer-tps-info">
               <span class="engineer-tps">{{ eng.typesPerSecond }}/秒</span>
-              <span class="engineer-bonus" v-if="eng.digitBonus > 1">
-                x{{ eng.digitBonus.toFixed(1) }}
+              <span class="engineer-synergy" v-if="eng.synergyBonus > 0">
+                +{{ Math.round(eng.synergyBonus * 100) }}%
               </span>
               <span class="engineer-total-tps" v-if="eng.count > 0">
                 計{{ formatNumber(eng.effectiveTps) }}/秒
@@ -215,10 +221,36 @@ function hire(definitionId: string): void {
   color: rgba(255, 255, 255, 0.5);
 }
 
-.engineer-bonus {
+.engineer-synergy {
   color: #fbbf24;
   font-weight: 700;
   font-size: 0.75rem;
+}
+
+.milestone-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.milestone-icon {
+  font-size: 1rem;
+}
+
+.milestone-text {
+  color: rgba(255, 255, 255, 0.6);
+  flex: 1;
+}
+
+.milestone-value {
+  color: #ffd700;
+  font-weight: 700;
 }
 
 .engineer-total-tps {
