@@ -9,7 +9,7 @@ const store = useGameStore()
 function calcDigitBonus(count: number): number {
   if (count < 10) return 1
   const digits = Math.floor(Math.log10(count))
-  return 1 + digits * 0.3
+  return 1 + digits * 0.5
 }
 
 const engineerItems = computed(() =>

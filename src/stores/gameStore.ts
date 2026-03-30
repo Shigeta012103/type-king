@@ -20,7 +20,7 @@ const BASE_FEVER_MULTIPLIER = 3
 function calcEngineerDigitBonus(count: number): number {
   if (count < 10) return 1
   const digits = Math.floor(Math.log10(count))
-  return 1 + digits * 0.3
+  return 1 + digits * 0.5
 }
 
 function calcLevelBonus(basePower: number, level: number): number {
