@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useGameStore } from './stores/gameStore'
-import { formatNumber } from './utils/formatNumber'
 import ScoreDisplay from './components/ScoreDisplay.vue'
 import TypingArea from './components/TypingArea.vue'
 import EngineerPanel from './components/EngineerPanel.vue'
@@ -12,7 +11,7 @@ type SideTab = 'engineers' | 'upgrades' | 'fever'
 
 const store = useGameStore()
 const activeTab = ref<SideTab>('engineers')
-const IPO_COST_DISPLAY = formatNumber(1_000_000_000)
+const ipoCostDisplay = computed(() => store.fmt(1_000_000_000))
 
 function handleIpo(): void {
   store.doIpo()
@@ -59,7 +58,7 @@ onUnmounted(() => {
             <span class="ipo-desc">新たなエンジニアとアップグレードが解放される</span>
           </div>
           <span class="ipo-cost" :class="{ affordable: store.canIpo }">
-            {{ IPO_COST_DISPLAY }} タイプ
+            {{ ipoCostDisplay }} タイプ
           </span>
         </button>
       </div>

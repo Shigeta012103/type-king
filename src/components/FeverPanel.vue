@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { FEVER_UPGRADE_DEFINITIONS } from '../constants/feverUpgrades'
-import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
 
@@ -62,7 +61,7 @@ function purchase(definitionId: string): void {
           <span class="fever-desc">{{ fever.description }}</span>
         </div>
         <span class="fever-cost" :class="{ affordable: fever.canAfford }">
-          {{ formatNumber(fever.cost) }}
+          {{ store.fmt(fever.cost) }}
         </span>
       </button>
     </div>

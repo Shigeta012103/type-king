@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
-import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
-const useShortFormat = ref(false)
 
-function formatScore(value: number): string {
-  if (useShortFormat.value) return formatNumber(value)
-  return Math.floor(value).toLocaleString()
-}
-
-const displayTotal = computed(() => formatScore(store.totalTypes))
-const displayTps = computed(() => formatScore(store.typesPerSecond))
-const displayMultiplier = computed(() => `x${formatNumber(store.effectiveTypingMultiplier)}`)
+const displayTotal = computed(() => store.fmt(store.totalTypes))
+const displayTps = computed(() => store.fmt(store.typesPerSecond))
+const displayMultiplier = computed(() => `x${store.fmt(store.effectiveTypingMultiplier)}`)
 
 const feverCountdown = computed(() =>
   Math.ceil(store.nextFeverMs / 1000)
@@ -30,9 +23,6 @@ const nextFeverDisplay = computed(() => {
   return min > 0 ? `${min}:${String(s).padStart(2, '0')}` : `${s}s`
 })
 
-function toggleFormat(): void {
-  useShortFormat.value = !useShortFormat.value
-}
 </script>
 
 <template>
@@ -72,10 +62,10 @@ function toggleFormat(): void {
     </div>
     <button
       class="format-toggle"
-      :aria-label="`数値表示を${useShortFormat ? '全桁' : '省略'}に切り替え`"
-      @click="toggleFormat"
+      :aria-label="`数値表示を${store.useShortFormat ? '全桁' : '省略'}に切り替え`"
+      @click="store.toggleFormat()"
     >
-      {{ useShortFormat ? '123...' : 'K/M' }}
+      {{ store.useShortFormat ? '123...' : '万/億' }}
     </button>
   </div>
 </template>

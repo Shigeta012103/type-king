@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { UPGRADE_DEFINITIONS } from '../constants/upgrades'
-import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
 
@@ -62,15 +61,15 @@ function purchase(definitionId: string): void {
             <span class="upgrade-desc">{{ upgrade.description }}</span>
             <div class="upgrade-bonus-row">
               <span class="upgrade-next-bonus">
-                次: +{{ formatNumber(upgrade.nextBonus) }}
+                次: +{{ store.fmt(upgrade.nextBonus) }}
               </span>
               <span class="upgrade-current-bonus" v-if="upgrade.totalBonus > 0">
-                現在: +{{ formatNumber(upgrade.totalBonus) }}
+                現在: +{{ store.fmt(upgrade.totalBonus) }}
               </span>
             </div>
           </div>
           <span class="upgrade-cost" :class="{ affordable: upgrade.canAfford }">
-            {{ formatNumber(upgrade.cost) }}
+            {{ store.fmt(upgrade.cost) }}
           </span>
         </template>
       </button>

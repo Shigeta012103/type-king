@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
 import { MILESTONES } from '../utils/engineerBonus'
-import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
 
@@ -140,11 +139,11 @@ function hire(definitionId: string): void {
             <div class="engineer-tps-info">
               <span class="engineer-tps">{{ eng.typesPerSecond }}/秒</span>
               <span class="engineer-total-tps" v-if="eng.count > 0">
-                計{{ formatNumber(eng.effectiveTps) }}/秒
+                計{{ store.fmt(eng.effectiveTps) }}/秒
               </span>
             </div>
             <span class="engineer-cost" :class="{ affordable: eng.canAfford }">
-              {{ formatNumber(eng.cost) }} タイプ
+              {{ store.fmt(eng.cost) }} タイプ
             </span>
           </div>
         </template>

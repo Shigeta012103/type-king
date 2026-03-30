@@ -9,6 +9,7 @@ import {
   LEVEL_COST_GROWTH,
 } from '../constants/upgrades'
 import { FEVER_UPGRADE_DEFINITIONS } from '../constants/feverUpgrades'
+import { formatNumber } from '../utils/formatNumber'
 
 const SAVE_KEY = 'type-king-save'
 const AUTO_TICK_INTERVAL_MS = 100
@@ -41,6 +42,18 @@ export const useGameStore = defineStore('game', () => {
   const feverUpgrades = ref<OwnedFeverUpgrade[]>(
     FEVER_UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
   )
+
+  // 表示形式
+  const useShortFormat = ref(false)
+
+  function toggleFormat(): void {
+    useShortFormat.value = !useShortFormat.value
+  }
+
+  function fmt(value: number): string {
+    if (useShortFormat.value) return formatNumber(value)
+    return Math.floor(value).toLocaleString()
+  }
 
   // フィーバー状態
   const isFeverActive = ref(false)
@@ -343,6 +356,9 @@ export const useGameStore = defineStore('game', () => {
   return {
     totalTypes,
     isIpoed,
+    useShortFormat,
+    toggleFormat,
+    fmt,
     engineers,
     upgrades,
     feverUpgrades,
