@@ -11,7 +11,7 @@ import type { UpgradeDefinition } from '../types/game'
  *   エンジニア自動 ~5,000/秒
  *   → 手動:自動 ≈ 2.7:1（手動が優位だが自動も意味がある）
  */
-export const LEVEL_POWER_GROWTH = 15
+export const LEVEL_POWER_GROWTH = 8
 export const LEVEL_COST_GROWTH = 25
 
 export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
