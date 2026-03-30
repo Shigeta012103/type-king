@@ -2,13 +2,14 @@
 import { computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
+import { MILESTONES } from '../utils/engineerBonus'
 import { formatNumber } from '../utils/formatNumber'
 
 const store = useGameStore()
 
 const engineerItems = computed(() => {
   const summary = store.engineerBonusSummary
-  return ENGINEER_DEFINITIONS.map((def) => {
+  return ENGINEER_DEFINITIONS.map((def, idx) => {
     const locked = def.requiresIpo && !store.isIpoed
     const owned = store.engineers.find((e) => e.definitionId === def.id)
     const count = owned?.count ?? 0
@@ -17,7 +18,32 @@ const engineerItems = computed(() => {
     const detail = summary.engineers.find((d) => d.definitionId === def.id)
     const synergyBonus = detail?.synergyBonus ?? 0
     const effectiveTps = detail?.effectiveTps ?? 0
-    return { ...def, count, cost, canAfford, synergyBonus, effectiveTps, locked }
+
+    // シナジー説明文を生成
+    const synergyDescs: string[] = []
+    if (idx > 0) {
+      const lowerName = ENGINEER_DEFINITIONS[idx - 1].name
+      synergyDescs.push(`${lowerName}1人で+0.5%`)
+    }
+    if (idx < ENGINEER_DEFINITIONS.length - 1) {
+      const upperName = ENGINEER_DEFINITIONS[idx + 1].name
+      synergyDescs.push(`${upperName}1人で+5%`)
+    }
+
+    // 次のマイルストーン
+    const nextMilestone = MILESTONES.find((ms) => count < ms.threshold)
+
+    return {
+      ...def,
+      count,
+      cost,
+      canAfford,
+      synergyBonus,
+      effectiveTps,
+      locked,
+      synergyDescs,
+      nextMilestone,
+    }
   })
 })
 
@@ -31,13 +57,27 @@ function hire(definitionId: string): void {
 
 <template>
   <div class="engineer-panel">
-    <!-- マイルストーンボーナス表示 -->
-    <div class="milestone-bar" v-if="milestoneCount > 0">
-      <span class="milestone-icon" aria-hidden="true">🏆</span>
-      <span class="milestone-text">
-        マイルストーン {{ milestoneCount }}個達成
-      </span>
-      <span class="milestone-value">全体 +{{ Math.round(milestoneBonus * 100) }}%</span>
+    <!-- ボーナス説明 -->
+    <div class="bonus-guide">
+      <div class="guide-header">
+        <span class="guide-icon" aria-hidden="true">💡</span>
+        <span class="guide-title">ボーナスシステム</span>
+      </div>
+      <div class="guide-row">
+        <span class="guide-label">シナジー</span>
+        <span class="guide-text">隣り合うランクが互いを強化</span>
+      </div>
+      <div class="guide-row">
+        <span class="guide-label">マイルストーン</span>
+        <span class="guide-text">25/50/100人到達で全体バフ</span>
+      </div>
+      <div class="milestone-bar" v-if="milestoneCount > 0">
+        <span class="milestone-icon" aria-hidden="true">🏆</span>
+        <span class="milestone-text">
+          {{ milestoneCount }}個達成
+        </span>
+        <span class="milestone-value">全体 +{{ Math.round(milestoneBonus * 100) }}%</span>
+      </div>
     </div>
     <div class="engineer-list">
       <button
@@ -75,12 +115,30 @@ function hire(definitionId: string): void {
               {{ eng.count }}
             </span>
           </div>
+          <!-- シナジー説明 -->
+          <div class="synergy-info">
+            <span class="synergy-label">シナジー:</span>
+            <span
+              v-for="(desc, i) in eng.synergyDescs"
+              :key="i"
+              class="synergy-desc"
+            >
+              {{ desc }}
+            </span>
+            <span class="synergy-current" v-if="eng.synergyBonus > 0">
+              (現在 +{{ Math.round(eng.synergyBonus * 100) }}%)
+            </span>
+          </div>
+          <!-- 次のマイルストーン -->
+          <div class="next-milestone" v-if="eng.nextMilestone && eng.count > 0">
+            🏆 {{ eng.nextMilestone.threshold }}人で全体+{{ Math.round(eng.nextMilestone.globalBonus * 100) }}%
+            <span class="milestone-progress">
+              (あと{{ eng.nextMilestone.threshold - eng.count }}人)
+            </span>
+          </div>
           <div class="engineer-footer">
             <div class="engineer-tps-info">
               <span class="engineer-tps">{{ eng.typesPerSecond }}/秒</span>
-              <span class="engineer-synergy" v-if="eng.synergyBonus > 0">
-                +{{ Math.round(eng.synergyBonus * 100) }}%
-              </span>
               <span class="engineer-total-tps" v-if="eng.count > 0">
                 計{{ formatNumber(eng.effectiveTps) }}/秒
               </span>
@@ -221,10 +279,83 @@ function hire(definitionId: string): void {
   color: rgba(255, 255, 255, 0.5);
 }
 
-.engineer-synergy {
+.bonus-guide {
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.guide-icon {
+  font-size: 0.85rem;
+}
+
+.guide-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.guide-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  margin-bottom: 0.2rem;
+}
+
+.guide-label {
   color: #fbbf24;
   font-weight: 700;
-  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.guide-text {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.synergy-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  padding: 0 0.25rem;
+}
+
+.synergy-label {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+}
+
+.synergy-desc {
+  color: #fbbf24;
+  background: rgba(255, 187, 36, 0.1);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+
+.synergy-current {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.next-milestone {
+  font-size: 0.65rem;
+  color: rgba(255, 215, 0, 0.7);
+  padding: 0 0.25rem;
+}
+
+.milestone-progress {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .milestone-bar {
