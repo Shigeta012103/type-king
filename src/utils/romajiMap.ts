@@ -96,7 +96,7 @@ const ROMAJI_MAP: Record<string, string[]> = {
   'ふぉ': ['fo', 'huxo', 'hulo'],
   'うぇ': ['we', 'uxe', 'ule'],
   'うぃ': ['wi', 'uxi', 'uli'],
-  'うぉ': ['who', 'uxo', 'ulo'],
+  'うぉ': ['who', 'wo', 'uxo', 'ulo'],
   'つぁ': ['tsa'],
   'とぅ': ['twu', 'toxu', 'tolu'],
   'どぅ': ['dwu', 'doxu', 'dolu'],
