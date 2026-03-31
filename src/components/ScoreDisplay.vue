@@ -52,12 +52,10 @@ const nextFeverDisplay = computed(() => {
     </div>
     <div class="score-sub">
       <div class="score-item">
-        <span class="score-item-value">{{ displayTps }}</span>
+        <span class="score-item-value" :class="{ 'fever-tps': showFeverTps }">
+          {{ showFeverTps ? displayEffectiveTps : displayTps }}
+        </span>
         <span class="score-item-label">タイプ/秒</span>
-        <template v-if="showFeverTps">
-          <span class="fever-arrow" aria-hidden="true">→</span>
-          <span class="score-item-value fever-tps">{{ displayEffectiveTps }}</span>
-        </template>
       </div>
       <div class="score-item">
         <span class="score-item-value" :class="{ 'fever-mult': store.isFeverActive }">
