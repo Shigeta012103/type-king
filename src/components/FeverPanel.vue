@@ -5,13 +5,53 @@ import { FEVER_UPGRADE_DEFINITIONS } from '../constants/feverUpgrades'
 
 const store = useGameStore()
 
-const feverItems = computed(() =>
+interface FeverItemDisplay {
+  id: string
+  name: string
+  icon: string
+  level: number
+  cost: number
+  canAfford: boolean
+  currentEffect: string
+  nextEffect: string
+}
+
+const feverItems = computed((): FeverItemDisplay[] =>
   FEVER_UPGRADE_DEFINITIONS.map((def) => {
     const owned = store.feverUpgrades.find((u) => u.definitionId === def.id)
     const level = owned?.level ?? 0
     const cost = store.getFeverUpgradeCost(def.id)
     const canAfford = store.totalTypes >= cost
-    return { ...def, level, cost, canAfford }
+
+    let currentEffect = ''
+    let nextEffect = ''
+
+    switch (def.id) {
+      case 'fever-boost':
+        currentEffect = level > 0 ? `倍率 x${3 + level}` : '倍率 x3（初期値）'
+        nextEffect = `→ x${3 + level + 1}`
+        break
+      case 'fever-extend':
+        currentEffect = level > 0 ? `持続 ${30 + level * 5}秒` : '持続 30秒（初期値）'
+        nextEffect = `→ ${30 + (level + 1) * 5}秒`
+        break
+      case 'fever-cooldown': {
+        const currentCd = Math.max(15, 60 - level * 5)
+        const nextCd = Math.max(15, 60 - (level + 1) * 5)
+        currentEffect = level > 0 ? `間隔 ${currentCd}秒` : '間隔 60秒（初期値）'
+        nextEffect = currentCd <= 15 ? '最短到達済み' : `→ ${nextCd}秒`
+        break
+      }
+      case 'fever-sync': {
+        const currentPct = Math.min(Math.round((level / 3) * 100), 100)
+        const nextPct = Math.min(Math.round(((level + 1) / 3) * 100), 100)
+        currentEffect = level > 0 ? `自動タイプに${currentPct}%適用` : '自動タイプ適用なし'
+        nextEffect = currentPct >= 100 ? '最大到達済み' : `→ ${nextPct}%適用`
+        break
+      }
+    }
+
+    return { id: def.id, name: def.name, icon: def.icon, level, cost, canAfford, currentEffect, nextEffect }
   })
 )
 
@@ -50,7 +90,7 @@ function purchase(definitionId: string): void {
         :aria-label="`${fever.name}を購入 Lv.${fever.level} コスト${fever.cost}タイプ`"
         @click="purchase(fever.id)"
       >
-        <span class="fever-icon" aria-hidden="true">{{ fever.icon }}</span>
+        <span class="fever-icon-display" aria-hidden="true">{{ fever.icon }}</span>
         <div class="fever-info">
           <div class="fever-name-row">
             <span class="fever-name">{{ fever.name }}</span>
@@ -58,7 +98,10 @@ function purchase(definitionId: string): void {
               Lv.{{ fever.level }}
             </span>
           </div>
-          <span class="fever-desc">{{ fever.description }}</span>
+          <div class="fever-effect-row">
+            <span class="fever-current">{{ fever.currentEffect }}</span>
+            <span class="fever-next">{{ fever.nextEffect }}</span>
+          </div>
         </div>
         <span class="fever-cost" :class="{ affordable: fever.canAfford }">
           {{ store.fmt(fever.cost) }}
@@ -143,7 +186,7 @@ function purchase(definitionId: string): void {
   background: rgba(255, 165, 0, 0.05);
 }
 
-.fever-icon {
+.fever-icon-display {
   font-size: 1.5rem;
   flex-shrink: 0;
 }
@@ -153,7 +196,7 @@ function purchase(definitionId: string): void {
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  gap: 0.15rem;
+  gap: 0.2rem;
 }
 
 .fever-name-row {
@@ -177,9 +220,20 @@ function purchase(definitionId: string): void {
   border-radius: 4px;
 }
 
-.fever-desc {
+.fever-effect-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.4);
+}
+
+.fever-current {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fever-next {
+  color: #4ade80;
+  font-weight: 600;
 }
 
 .fever-cost {

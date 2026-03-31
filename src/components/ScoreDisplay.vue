@@ -6,7 +6,13 @@ const store = useGameStore()
 
 const displayTotal = computed(() => store.fmt(store.totalTypes))
 const displayTps = computed(() => store.fmt(store.typesPerSecond))
+const displayEffectiveTps = computed(() =>
+  store.fmt(store.typesPerSecond * store.effectiveTpsMultiplier)
+)
 const displayMultiplier = computed(() => `x${store.fmt(store.effectiveTypingMultiplier)}`)
+const showFeverTps = computed(() =>
+  store.isFeverActive && store.effectiveTpsMultiplier > 1
+)
 
 const feverCountdown = computed(() =>
   Math.ceil(store.nextFeverMs / 1000)
@@ -48,6 +54,10 @@ const nextFeverDisplay = computed(() => {
       <div class="score-item">
         <span class="score-item-value">{{ displayTps }}</span>
         <span class="score-item-label">タイプ/秒</span>
+        <template v-if="showFeverTps">
+          <span class="fever-arrow" aria-hidden="true">→</span>
+          <span class="score-item-value fever-tps">{{ displayEffectiveTps }}</span>
+        </template>
       </div>
       <div class="score-item">
         <span class="score-item-value" :class="{ 'fever-mult': store.isFeverActive }">
@@ -190,6 +200,17 @@ const nextFeverDisplay = computed(() => {
   display: flex;
   align-items: baseline;
   gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.fever-arrow {
+  color: #ffa500;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.fever-tps {
+  color: #ffa500 !important;
 }
 
 .score-item-value {
