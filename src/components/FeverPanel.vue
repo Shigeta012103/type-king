@@ -43,13 +43,10 @@ const feverItems = computed((): FeverItemDisplay[] =>
         break
       }
       case 'fever-sync': {
-        const feverMult = 3 + (store.feverUpgrades.find((u) => u.definitionId === 'fever-boost')?.level ?? 0)
-        const currentRate = Math.min(level / 3, 1)
-        const nextRate = Math.min((level + 1) / 3, 1)
-        const currentAutoMult = (1 + (feverMult - 1) * currentRate).toFixed(1)
-        const nextAutoMult = (1 + (feverMult - 1) * nextRate).toFixed(1)
-        currentEffect = level > 0 ? `フィーバー中 自動タイプ x${currentAutoMult}` : 'フィーバーが自動タイプに効かない'
-        nextEffect = currentRate >= 1 ? '最大到達済み' : `→ x${nextAutoMult}`
+        const currentPct = Math.min(Math.round((level / 3) * 100), 100)
+        const nextPct = Math.min(Math.round(((level + 1) / 3) * 100), 100)
+        currentEffect = level > 0 ? `ブーストの${currentPct}%を自動タイプに適用` : '自動タイプにフィーバー効果なし'
+        nextEffect = currentPct >= 100 ? '最大到達済み' : `→ ${nextPct}%適用`
         break
       }
     }

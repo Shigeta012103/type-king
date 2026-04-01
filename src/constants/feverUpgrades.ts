@@ -28,7 +28,7 @@ export const FEVER_UPGRADE_DEFINITIONS: FeverUpgradeDefinition[] = [
   {
     id: 'fever-sync',
     name: 'フィーバーシンクロ',
-    description: 'フィーバー倍率を自動タイプにも適用(Lv3で100%)',
+    description: 'フィーバーバフを自動タイプにも適用',
     baseCost: 100000000,
     costGrowth: 15,
     icon: '🔄',
