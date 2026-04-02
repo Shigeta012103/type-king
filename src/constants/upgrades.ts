@@ -62,18 +62,18 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     requiresIpo: false,
   },
   {
-    id: 'neural-link',
-    name: 'ニューラルリンク',
-    description: '思考がそのまま文字になる',
+    id: 'hologram-keyboard',
+    name: 'ホログラムキーボード',
+    description: '空中に浮かぶ光のキーを叩く',
     basePower: 3500,
     baseCost: 20000000,
-    icon: '🧠',
+    icon: '🔮',
     requiresIpo: false,
   },
 
   // --- 上場後 ---
   // 各ティアのLv.1が同コスト帯の既存アップグレードLv.N+1と同等以上になるよう設計
-  // Drill(5億) ≈ Neural Link Lv.2(5億で+28K) → basePower 30,000
+  // Drill(5億) ≈ Hologram Keyboard Lv.2(5億で+28K) → basePower 30,000
   {
     id: 'drill',
     name: 'ドリル',

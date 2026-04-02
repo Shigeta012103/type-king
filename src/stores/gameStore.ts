@@ -223,6 +223,7 @@ export const useGameStore = defineStore('game', () => {
   // --- ティック ---
   let tickInterval: ReturnType<typeof setInterval> | null = null
   let lastTickTime = 0
+  let hiddenAt = 0
 
   function tick(): void {
     const now = performance.now()
@@ -239,8 +240,27 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function onVisibilityChange(): void {
-    if (document.visibilityState === 'visible') {
-      tick()
+    if (document.visibilityState === 'hidden') {
+      hiddenAt = Date.now()
+      saveGame()
+      return
+    }
+
+    // タブ復帰時: スリープ・バックグラウンド中の経過時間分を加算
+    if (document.visibilityState === 'visible' && hiddenAt > 0) {
+      const offlineMs = Date.now() - hiddenAt
+      hiddenAt = 0
+
+      if (offlineMs > 0 && typesPerSecond.value > 0) {
+        const offlineGain = typesPerSecond.value * (offlineMs / 1000)
+        totalTypes.value += offlineGain
+      }
+
+      // フィーバータイマーも経過分進める
+      updateFeverTimer(offlineMs)
+
+      // lastTickTime をリセットして次の通常tickで二重加算しない
+      lastTickTime = performance.now()
     }
   }
 
