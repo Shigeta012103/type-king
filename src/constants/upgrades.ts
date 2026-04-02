@@ -64,7 +64,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   {
     id: 'hologram-keyboard',
     name: 'ホログラムキーボード',
-    description: '空中に浮かぶ光のキーを叩く',
+    description: '幾重にも重なった光のキーボード',
     basePower: 3500,
     baseCost: 20000000,
     icon: '🔮',
