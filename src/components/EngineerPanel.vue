@@ -192,23 +192,19 @@ function hire(definitionId: string): void {
               {{ eng.count }}
             </span>
           </div>
-          <!-- シナジーペア -->
-          <div class="synergy-info" v-if="eng.synergies.length > 0">
+          <!-- シナジー -->
+          <div class="synergy-info" v-if="eng.synergyBonus > 0">
             <div
-              v-for="syn in eng.synergies"
+              v-for="syn in eng.synergies.filter(s => s.partnerCount > 0)"
               :key="syn.name"
               class="synergy-pair"
             >
               <span class="synergy-pair-icon" aria-hidden="true">{{ syn.icon }}</span>
               <span class="synergy-pair-name">{{ syn.name }}</span>
-              <span class="synergy-pair-detail">
-                <span class="synergy-received" v-if="syn.receivedBonus > 0">
-                  {{ syn.partnerName }}{{ syn.partnerCount }}人→+{{ Math.round(syn.receivedBonus) }}%
-                </span>
-                <span class="synergy-gives">
-                  雇うと{{ syn.partnerName }}に+0.5%
-                </span>
-              </span>
+              <span class="synergy-pair-value">{{ syn.partnerCount }}人 +{{ Math.round(syn.receivedBonus) }}%</span>
+            </div>
+            <div class="synergy-total">
+              シナジー合計 +{{ Math.round(eng.synergyBonus * 100) }}%
             </div>
           </div>
           <!-- 次のマイルストーン -->
@@ -504,16 +500,15 @@ function hire(definitionId: string): void {
 .synergy-info {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.2rem;
   padding: 0 0.25rem;
 }
 
 .synergy-pair {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.3rem;
   font-size: 0.65rem;
-  flex-wrap: wrap;
 }
 
 .synergy-pair-icon {
@@ -523,23 +518,19 @@ function hire(definitionId: string): void {
 .synergy-pair-name {
   color: #fbbf24;
   font-weight: 700;
-  flex-shrink: 0;
 }
 
-.synergy-pair-detail {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.synergy-received {
+.synergy-pair-value {
   color: #4ade80;
-  font-weight: 600;
 }
 
-.synergy-gives {
-  color: rgba(255, 255, 255, 0.35);
+.synergy-total {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #4ade80;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.2rem;
+  margin-top: 0.1rem;
 }
 
 .next-milestone {
