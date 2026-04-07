@@ -17,16 +17,19 @@ export interface SynergyPair {
 }
 
 export const SYNERGY_PAIRS: SynergyPair[] = [
-  // 上場前
+  // 同ティア帯
   { engineerA: 'junior', engineerB: 'middle', name: 'ペアプロ', icon: '🤝' },
   { engineerA: 'assistant', engineerB: 'senior', name: 'メンター制度', icon: '🎓' },
   { engineerA: 'middle', engineerB: 'expert', name: '技術継承', icon: '📜' },
-  // 上場後
   { engineerA: 'senior', engineerB: 'robot', name: '人機協調', icon: '🤖' },
   { engineerA: 'expert', engineerB: 'wizard', name: '魔法工学', icon: '⚗️' },
   { engineerA: 'robot', engineerB: 'dragon', name: '竜騎兵', icon: '🐲' },
   { engineerA: 'wizard', engineerB: 'time-lord', name: '時空魔法', icon: '🌀' },
   { engineerA: 'time-lord', engineerB: 'god', name: '神の祝福', icon: '✨' },
+  // クロスティア（低ティア × 高ティア）
+  { engineerA: 'assistant', engineerB: 'god', name: '神の寵愛', icon: '🙏' },
+  { engineerA: 'junior', engineerB: 'dragon', name: '竜の弟子', icon: '🔥' },
+  { engineerA: 'middle', engineerB: 'time-lord', name: '時短術', icon: '⏱️' },
 ]
 
 /**
