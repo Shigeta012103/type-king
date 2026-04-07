@@ -2,16 +2,25 @@ import type { OwnedEngineer } from '../types/game'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
 
 /**
- * シナジーボーナス: 隣接ティア同士が強化し合う
+ * シナジーボーナス: 全ティア間で相互強化（距離で減衰）
  *
- * 下位ティア1人 → 上位ティアのTPS +0.5%
- * 上位ティア1人 → 下位ティアのTPS +5%
+ * 距離1（隣接）: 下位1人→上位+0.5%, 上位1人→下位+5%
+ * 距離2:         下位1人→上位+0.3%, 上位1人→下位+3%
+ * 距離3以上:     下位1人→上位+0.1%, 上位1人→下位+1%
  *
- * 例: アシスタント100人 → ジュニアに+50%ボーナス
- *     エキスパート10人 → シニアに+50%ボーナス
+ * 例: アシスタント100人 → ジュニア+50%, ミドル+30%, シニア以上+10%
  */
-const LOWER_TO_UPPER_RATE = 0.005
-const UPPER_TO_LOWER_RATE = 0.05
+interface SynergyRate {
+  lowerToUpper: number
+  upperToLower: number
+}
+
+const SYNERGY_BY_DISTANCE: SynergyRate[] = [
+  { lowerToUpper: 0, upperToLower: 0 },         // 距離0（自身）
+  { lowerToUpper: 0.005, upperToLower: 0.05 },  // 距離1（隣接）
+  { lowerToUpper: 0.003, upperToLower: 0.03 },  // 距離2
+]
+const FAR_SYNERGY: SynergyRate = { lowerToUpper: 0.001, upperToLower: 0.01 } // 距離3以上
 
 /**
  * マイルストーンボーナス: 特定人数で全エンジニアにバフ
@@ -80,18 +89,19 @@ export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary
 
     const digitBonus = calcDigitBonus(count)
 
-    // 下のティアからのシナジー（下位の人数 × LOWER_TO_UPPER_RATE）
+    // 全ティアからのシナジー（距離で減衰）
     let synergyFromLower = 0
-    if (i > 0) {
-      const lowerCount = getCountByIndex(engineers, i - 1)
-      synergyFromLower = lowerCount * LOWER_TO_UPPER_RATE
-    }
-
-    // 上のティアからのシナジー（上位の人数 × UPPER_TO_LOWER_RATE）
     let synergyFromUpper = 0
-    if (i < ENGINEER_DEFINITIONS.length - 1) {
-      const upperCount = getCountByIndex(engineers, i + 1)
-      synergyFromUpper = upperCount * UPPER_TO_LOWER_RATE
+    for (let j = 0; j < ENGINEER_DEFINITIONS.length; j++) {
+      if (j === i) continue
+      const distance = Math.abs(i - j)
+      const rate = SYNERGY_BY_DISTANCE[distance] ?? FAR_SYNERGY
+      const otherCount = getCountByIndex(engineers, j)
+      if (j < i) {
+        synergyFromLower += otherCount * rate.lowerToUpper
+      } else {
+        synergyFromUpper += otherCount * rate.upperToLower
+      }
     }
 
     const synergyBonus = synergyFromLower + synergyFromUpper
