@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
-import { MILESTONES } from '../utils/engineerBonus'
+import { MILESTONES, SYNERGY_PAIRS } from '../utils/engineerBonus'
 
 const store = useGameStore()
 
 const engineerItems = computed(() => {
   const summary = store.engineerBonusSummary
-  return ENGINEER_DEFINITIONS.map((def, idx) => {
+  return ENGINEER_DEFINITIONS.map((def) => {
     const locked = def.requiresIpo && !store.isIpoed
     const owned = store.engineers.find((e) => e.definitionId === def.id)
     const count = owned?.count ?? 0
@@ -18,21 +18,21 @@ const engineerItems = computed(() => {
     const synergyBonus = detail?.synergyBonus ?? 0
     const effectiveTps = detail?.effectiveTps ?? 0
 
-    // シナジー説明文を生成（全ティア、距離で減衰）
-    const LOWER_RATES = [0, 0.5, 0.3, 0.1]
-    const UPPER_RATES = [0, 5, 3, 1]
-    const synergyDescs: string[] = []
-    for (let j = 0; j < ENGINEER_DEFINITIONS.length; j++) {
-      if (j === idx) continue
-      const distance = Math.abs(idx - j)
-      const rateIdx = Math.min(distance, 3)
-      const name = ENGINEER_DEFINITIONS[j].name
-      if (j < idx) {
-        synergyDescs.push(`${name}1人+${LOWER_RATES[rateIdx]}%`)
-      } else {
-        synergyDescs.push(`${name}1人+${UPPER_RATES[rateIdx]}%`)
-      }
-    }
+    // このエンジニアが属するシナジーペア情報
+    const synergies = SYNERGY_PAIRS
+      .filter((p) => p.engineerA === def.id || p.engineerB === def.id)
+      .map((pair) => {
+        const partnerId = pair.engineerA === def.id ? pair.engineerB : pair.engineerA
+        const partnerDef = ENGINEER_DEFINITIONS.find((d) => d.id === partnerId)
+        const partnerCount = store.engineers.find((e) => e.definitionId === partnerId)?.count ?? 0
+        return {
+          name: pair.name,
+          icon: pair.icon,
+          partnerName: partnerDef?.name ?? '',
+          partnerCount,
+          bonus: partnerCount * 0.5,
+        }
+      })
 
     // 次のマイルストーン
     const nextMilestone = MILESTONES.find((ms) => count < ms.threshold)
@@ -45,7 +45,7 @@ const engineerItems = computed(() => {
       synergyBonus,
       effectiveTps,
       locked,
-      synergyDescs,
+      synergies,
       nextMilestone,
     }
   })
@@ -69,7 +69,7 @@ function hire(definitionId: string): void {
       </div>
       <div class="guide-row">
         <span class="guide-label">シナジー</span>
-        <span class="guide-text">全ランクが互いを強化（近いほど効果大）</span>
+        <span class="guide-text">特定の組み合わせが互いを強化</span>
       </div>
       <div class="guide-row">
         <span class="guide-label">マイルストーン</span>
@@ -119,19 +119,20 @@ function hire(definitionId: string): void {
               {{ eng.count }}
             </span>
           </div>
-          <!-- シナジー説明 -->
-          <div class="synergy-info">
-            <span class="synergy-label">シナジー:</span>
-            <span
-              v-for="(desc, i) in eng.synergyDescs"
-              :key="i"
-              class="synergy-desc"
+          <!-- シナジーペア -->
+          <div class="synergy-info" v-if="eng.synergies.length > 0">
+            <div
+              v-for="syn in eng.synergies"
+              :key="syn.name"
+              class="synergy-pair"
             >
-              {{ desc }}
-            </span>
-            <span class="synergy-current" v-if="eng.synergyBonus > 0">
-              (現在 +{{ Math.round(eng.synergyBonus * 100) }}%)
-            </span>
+              <span class="synergy-pair-icon" aria-hidden="true">{{ syn.icon }}</span>
+              <span class="synergy-pair-name">{{ syn.name }}</span>
+              <span class="synergy-partner">× {{ syn.partnerName }}</span>
+              <span class="synergy-current" v-if="syn.bonus > 0">
+                +{{ Math.round(syn.bonus) }}%
+              </span>
+            </div>
           </div>
           <!-- 次のマイルストーン -->
           <div class="next-milestone" v-if="eng.nextMilestone && eng.count > 0">
@@ -328,23 +329,29 @@ function hire(definitionId: string): void {
 
 .synergy-info {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.65rem;
+  flex-direction: column;
+  gap: 0.25rem;
   padding: 0 0.25rem;
 }
 
-.synergy-label {
-  color: rgba(255, 255, 255, 0.35);
-  font-weight: 600;
+.synergy-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.65rem;
 }
 
-.synergy-desc {
+.synergy-pair-icon {
+  font-size: 0.75rem;
+}
+
+.synergy-pair-name {
   color: #fbbf24;
-  background: rgba(255, 187, 36, 0.1);
-  padding: 0.1rem 0.35rem;
-  border-radius: 3px;
+  font-weight: 700;
+}
+
+.synergy-partner {
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .synergy-current {

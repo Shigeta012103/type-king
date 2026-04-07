@@ -2,25 +2,32 @@ import type { OwnedEngineer } from '../types/game'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
 
 /**
- * シナジーボーナス: 全ティア間で相互強化（距離で減衰）
+ * シナジーボーナス: 特定の組み合わせが互いを強化（クッキークリッカー方式）
  *
- * 距離1（隣接）: 下位1人→上位+0.5%, 上位1人→下位+5%
- * 距離2:         下位1人→上位+0.3%, 上位1人→下位+3%
- * 距離3以上:     下位1人→上位+0.1%, 上位1人→下位+1%
- *
- * 例: アシスタント100人 → ジュニア+50%, ミドル+30%, シニア以上+10%
+ * 相手1人につき自分のTPS +0.5%（双方向同率）
+ * 例: ジュニア50人 → ペアのミドルに+25%
  */
-interface SynergyRate {
-  lowerToUpper: number
-  upperToLower: number
+const SYNERGY_RATE = 0.005
+
+export interface SynergyPair {
+  engineerA: string
+  engineerB: string
+  name: string
+  icon: string
 }
 
-const SYNERGY_BY_DISTANCE: SynergyRate[] = [
-  { lowerToUpper: 0, upperToLower: 0 },         // 距離0（自身）
-  { lowerToUpper: 0.005, upperToLower: 0.05 },  // 距離1（隣接）
-  { lowerToUpper: 0.003, upperToLower: 0.03 },  // 距離2
+export const SYNERGY_PAIRS: SynergyPair[] = [
+  // 上場前
+  { engineerA: 'junior', engineerB: 'middle', name: 'ペアプロ', icon: '🤝' },
+  { engineerA: 'assistant', engineerB: 'senior', name: 'メンター制度', icon: '🎓' },
+  { engineerA: 'middle', engineerB: 'expert', name: '技術継承', icon: '📜' },
+  // 上場後
+  { engineerA: 'senior', engineerB: 'robot', name: '人機協調', icon: '🤖' },
+  { engineerA: 'expert', engineerB: 'wizard', name: '魔法工学', icon: '⚗️' },
+  { engineerA: 'robot', engineerB: 'dragon', name: '竜騎兵', icon: '🐲' },
+  { engineerA: 'wizard', engineerB: 'time-lord', name: '時空魔法', icon: '🌀' },
+  { engineerA: 'time-lord', engineerB: 'god', name: '神の祝福', icon: '✨' },
 ]
-const FAR_SYNERGY: SynergyRate = { lowerToUpper: 0.001, upperToLower: 0.01 } // 距離3以上
 
 /**
  * マイルストーンボーナス: 特定人数で全エンジニアにバフ
@@ -61,20 +68,25 @@ function calcDigitBonus(count: number): number {
   return 1 + digits * 0.5
 }
 
-function getCountByIndex(engineers: OwnedEngineer[], tierIndex: number): number {
-  const def = ENGINEER_DEFINITIONS[tierIndex]
-  if (!def) return 0
-  return engineers.find((e) => e.definitionId === def.id)?.count ?? 0
+function getCountById(engineers: OwnedEngineer[], definitionId: string): number {
+  return engineers.find((e) => e.definitionId === definitionId)?.count ?? 0
+}
+
+/** 指定エンジニアのシナジーペア相手のID一覧を返す */
+function getSynergyPartnerIds(definitionId: string): string[] {
+  const partners: string[] = []
+  for (const pair of SYNERGY_PAIRS) {
+    if (pair.engineerA === definitionId) partners.push(pair.engineerB)
+    if (pair.engineerB === definitionId) partners.push(pair.engineerA)
+  }
+  return partners
 }
 
 export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary {
   const details: EngineerBonusDetail[] = []
 
-  // シナジー計算
-  for (let i = 0; i < ENGINEER_DEFINITIONS.length; i++) {
-    const def = ENGINEER_DEFINITIONS[i]
-    const owned = engineers.find((e) => e.definitionId === def.id)
-    const count = owned?.count ?? 0
+  for (const def of ENGINEER_DEFINITIONS) {
+    const count = getCountById(engineers, def.id)
     if (count === 0) {
       details.push({
         definitionId: def.id,
@@ -89,22 +101,14 @@ export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary
 
     const digitBonus = calcDigitBonus(count)
 
-    // 全ティアからのシナジー（距離で減衰）
-    let synergyFromLower = 0
-    let synergyFromUpper = 0
-    for (let j = 0; j < ENGINEER_DEFINITIONS.length; j++) {
-      if (j === i) continue
-      const distance = Math.abs(i - j)
-      const rate = SYNERGY_BY_DISTANCE[distance] ?? FAR_SYNERGY
-      const otherCount = getCountByIndex(engineers, j)
-      if (j < i) {
-        synergyFromLower += otherCount * rate.lowerToUpper
-      } else {
-        synergyFromUpper += otherCount * rate.upperToLower
-      }
+    // シナジーペアの相手人数から計算
+    const partnerIds = getSynergyPartnerIds(def.id)
+    let synergyBonus = 0
+    for (const partnerId of partnerIds) {
+      const partnerCount = getCountById(engineers, partnerId)
+      synergyBonus += partnerCount * SYNERGY_RATE
     }
 
-    const synergyBonus = synergyFromLower + synergyFromUpper
     const effectiveTps = def.typesPerSecond * count * digitBonus * (1 + synergyBonus)
 
     details.push({
@@ -121,9 +125,8 @@ export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary
   let milestoneBonus = 0
   let milestoneCount = 0
   for (const eng of engineers) {
-    const count = eng.count
     for (const ms of MILESTONES) {
-      if (count >= ms.threshold) {
+      if (eng.count >= ms.threshold) {
         milestoneBonus += ms.globalBonus
         milestoneCount++
       }
