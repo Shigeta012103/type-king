@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
 import { MILESTONES, SYNERGY_PAIRS } from '../utils/engineerBonus'
 
 const store = useGameStore()
+const showSynergyList = ref(false)
 
 const engineerItems = computed(() => {
   const summary = store.engineerBonusSummary
@@ -28,13 +29,14 @@ const engineerItems = computed(() => {
         return {
           name: pair.name,
           icon: pair.icon,
+          partnerId,
           partnerName: partnerDef?.name ?? '',
+          partnerIcon: partnerDef?.icon ?? '',
           partnerCount,
-          bonus: partnerCount * 0.5,
+          receivedBonus: partnerCount * 0.5,
         }
       })
 
-    // 次のマイルストーン
     const nextMilestone = MILESTONES.find((ms) => count < ms.threshold)
 
     return {
@@ -47,6 +49,27 @@ const engineerItems = computed(() => {
       locked,
       synergies,
       nextMilestone,
+    }
+  })
+})
+
+// シナジー一覧用データ
+const synergyListItems = computed(() => {
+  return SYNERGY_PAIRS.map((pair) => {
+    const defA = ENGINEER_DEFINITIONS.find((d) => d.id === pair.engineerA)
+    const defB = ENGINEER_DEFINITIONS.find((d) => d.id === pair.engineerB)
+    const countA = store.engineers.find((e) => e.definitionId === pair.engineerA)?.count ?? 0
+    const countB = store.engineers.find((e) => e.definitionId === pair.engineerB)?.count ?? 0
+    return {
+      ...pair,
+      nameA: defA?.name ?? '',
+      nameB: defB?.name ?? '',
+      iconA: defA?.icon ?? '',
+      iconB: defB?.icon ?? '',
+      countA,
+      countB,
+      bonusToA: countB * 0.5,
+      bonusToB: countA * 0.5,
     }
   })
 })
@@ -69,7 +92,7 @@ function hire(definitionId: string): void {
       </div>
       <div class="guide-row">
         <span class="guide-label">シナジー</span>
-        <span class="guide-text">特定の組み合わせが互いを強化</span>
+        <span class="guide-text">特定の組み合わせが互いのTPSを+0.5%/人</span>
       </div>
       <div class="guide-row">
         <span class="guide-label">マイルストーン</span>
@@ -83,6 +106,56 @@ function hire(definitionId: string): void {
         <span class="milestone-value">全体 +{{ Math.round(milestoneBonus * 100) }}%</span>
       </div>
     </div>
+
+    <!-- シナジー一覧（トグル） -->
+    <button
+      class="synergy-toggle"
+      @click="showSynergyList = !showSynergyList"
+      :aria-expanded="showSynergyList"
+      aria-controls="synergy-list"
+    >
+      <span class="synergy-toggle-icon" aria-hidden="true">🔗</span>
+      <span class="synergy-toggle-text">シナジー一覧</span>
+      <span class="synergy-toggle-arrow" aria-hidden="true">{{ showSynergyList ? '▲' : '▼' }}</span>
+    </button>
+    <div
+      v-if="showSynergyList"
+      id="synergy-list"
+      class="synergy-list"
+    >
+      <div
+        v-for="syn in synergyListItems"
+        :key="syn.name"
+        class="synergy-list-item"
+      >
+        <div class="synergy-list-header">
+          <span class="synergy-list-icon" aria-hidden="true">{{ syn.icon }}</span>
+          <span class="synergy-list-name">{{ syn.name }}</span>
+        </div>
+        <div class="synergy-list-detail">
+          <span class="synergy-list-pair">
+            {{ syn.iconA }} {{ syn.nameA }}({{ syn.countA }})
+            ⇄
+            {{ syn.iconB }} {{ syn.nameB }}({{ syn.countB }})
+          </span>
+        </div>
+        <div class="synergy-list-effects">
+          <span class="synergy-list-effect" v-if="syn.bonusToA > 0 || syn.bonusToB > 0">
+            <template v-if="syn.bonusToA > 0">
+              {{ syn.nameA }}に+{{ Math.round(syn.bonusToA) }}%
+            </template>
+            <template v-if="syn.bonusToA > 0 && syn.bonusToB > 0"> / </template>
+            <template v-if="syn.bonusToB > 0">
+              {{ syn.nameB }}に+{{ Math.round(syn.bonusToB) }}%
+            </template>
+          </span>
+          <span class="synergy-list-effect inactive" v-else>
+            未発動
+          </span>
+        </div>
+      </div>
+    </div>
+
     <div class="engineer-list">
       <button
         v-for="eng in engineerItems"
@@ -128,9 +201,13 @@ function hire(definitionId: string): void {
             >
               <span class="synergy-pair-icon" aria-hidden="true">{{ syn.icon }}</span>
               <span class="synergy-pair-name">{{ syn.name }}</span>
-              <span class="synergy-partner">× {{ syn.partnerName }}</span>
-              <span class="synergy-current" v-if="syn.bonus > 0">
-                +{{ Math.round(syn.bonus) }}%
+              <span class="synergy-pair-detail">
+                <span class="synergy-received" v-if="syn.receivedBonus > 0">
+                  {{ syn.partnerName }}{{ syn.partnerCount }}人→+{{ Math.round(syn.receivedBonus) }}%
+                </span>
+                <span class="synergy-gives">
+                  雇うと{{ syn.partnerName }}に+0.5%
+                </span>
               </span>
             </div>
           </div>
@@ -327,36 +404,142 @@ function hire(definitionId: string): void {
   color: rgba(255, 255, 255, 0.45);
 }
 
+/* シナジー一覧トグル */
+.synergy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+
+.synergy-toggle:hover {
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.synergy-toggle-icon {
+  font-size: 0.85rem;
+}
+
+.synergy-toggle-text {
+  color: #fbbf24;
+  font-weight: 700;
+  flex: 1;
+  text-align: left;
+}
+
+.synergy-toggle-arrow {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.65rem;
+}
+
+/* シナジー一覧 */
+.synergy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(251, 191, 36, 0.04);
+  border: 1px solid rgba(251, 191, 36, 0.1);
+  border-radius: 8px;
+}
+
+.synergy-list-item {
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.synergy-list-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.15rem;
+}
+
+.synergy-list-icon {
+  font-size: 0.75rem;
+}
+
+.synergy-list-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.synergy-list-detail {
+  font-size: 0.65rem;
+}
+
+.synergy-list-pair {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.synergy-list-effects {
+  font-size: 0.65rem;
+  margin-top: 0.1rem;
+}
+
+.synergy-list-effect {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.synergy-list-effect.inactive {
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: 400;
+}
+
+/* カード内シナジー */
 .synergy-info {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
   padding: 0 0.25rem;
 }
 
 .synergy-pair {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  align-items: baseline;
+  gap: 0.3rem;
   font-size: 0.65rem;
+  flex-wrap: wrap;
 }
 
 .synergy-pair-icon {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .synergy-pair-name {
   color: #fbbf24;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
-.synergy-partner {
-  color: rgba(255, 255, 255, 0.45);
+.synergy-pair-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
-.synergy-current {
+.synergy-received {
   color: #4ade80;
-  font-weight: 700;
+  font-weight: 600;
+}
+
+.synergy-gives {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .next-milestone {

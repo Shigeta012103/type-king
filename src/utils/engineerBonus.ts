@@ -28,6 +28,7 @@ export const SYNERGY_PAIRS: SynergyPair[] = [
   { engineerA: 'time-lord', engineerB: 'god', name: '神の祝福', icon: '✨' },
   // クロスティア（低ティア × 高ティア）
   { engineerA: 'assistant', engineerB: 'god', name: '神の寵愛', icon: '🙏' },
+  { engineerA: 'assistant', engineerB: 'wizard', name: '魔法使いの卵', icon: '🪄' },
   { engineerA: 'junior', engineerB: 'dragon', name: '竜の弟子', icon: '🔥' },
   { engineerA: 'middle', engineerB: 'time-lord', name: '時短術', icon: '⏱️' },
 ]
