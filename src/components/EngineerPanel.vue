@@ -19,21 +19,30 @@ const engineerItems = computed(() => {
     const synergyBonus = detail?.synergyBonus ?? 0
     const effectiveTps = detail?.effectiveTps ?? 0
 
-    // このエンジニアが属するシナジーペア情報
-    const synergies = SYNERGY_PAIRS
-      .filter((p) => p.engineerA === def.id || p.engineerB === def.id)
+    // このエンジニアがtargetのシナジー（受けるバフ）
+    const receivedSynergies = SYNERGY_PAIRS
+      .filter((p) => p.target === def.id)
       .map((pair) => {
-        const partnerId = pair.engineerA === def.id ? pair.engineerB : pair.engineerA
-        const partnerDef = ENGINEER_DEFINITIONS.find((d) => d.id === partnerId)
-        const partnerCount = store.engineers.find((e) => e.definitionId === partnerId)?.count ?? 0
+        const sourceDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.source)
+        const sourceCount = store.engineers.find((e) => e.definitionId === pair.source)?.count ?? 0
         return {
           name: pair.name,
           icon: pair.icon,
-          partnerId,
-          partnerName: partnerDef?.name ?? '',
-          partnerIcon: partnerDef?.icon ?? '',
-          partnerCount,
-          receivedBonus: partnerCount * 0.5,
+          sourceName: sourceDef?.name ?? '',
+          sourceCount,
+          bonus: sourceCount,
+        }
+      })
+
+    // このエンジニアがsourceのシナジー（与えるバフ先）
+    const givesSynergies = SYNERGY_PAIRS
+      .filter((p) => p.source === def.id)
+      .map((pair) => {
+        const targetDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.target)
+        return {
+          name: pair.name,
+          icon: pair.icon,
+          targetName: targetDef?.name ?? '',
         }
       })
 
@@ -47,7 +56,8 @@ const engineerItems = computed(() => {
       synergyBonus,
       effectiveTps,
       locked,
-      synergies,
+      receivedSynergies,
+      givesSynergies,
       nextMilestone,
     }
   })
@@ -56,20 +66,17 @@ const engineerItems = computed(() => {
 // シナジー一覧用データ
 const synergyListItems = computed(() => {
   return SYNERGY_PAIRS.map((pair) => {
-    const defA = ENGINEER_DEFINITIONS.find((d) => d.id === pair.engineerA)
-    const defB = ENGINEER_DEFINITIONS.find((d) => d.id === pair.engineerB)
-    const countA = store.engineers.find((e) => e.definitionId === pair.engineerA)?.count ?? 0
-    const countB = store.engineers.find((e) => e.definitionId === pair.engineerB)?.count ?? 0
+    const sourceDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.source)
+    const targetDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.target)
+    const sourceCount = store.engineers.find((e) => e.definitionId === pair.source)?.count ?? 0
     return {
       ...pair,
-      nameA: defA?.name ?? '',
-      nameB: defB?.name ?? '',
-      iconA: defA?.icon ?? '',
-      iconB: defB?.icon ?? '',
-      countA,
-      countB,
-      bonusToA: countB * 0.5,
-      bonusToB: countA * 0.5,
+      sourceName: sourceDef?.name ?? '',
+      targetName: targetDef?.name ?? '',
+      sourceIcon: sourceDef?.icon ?? '',
+      targetIcon: targetDef?.icon ?? '',
+      sourceCount,
+      bonus: sourceCount,
     }
   })
 })
@@ -92,7 +99,7 @@ function hire(definitionId: string): void {
       </div>
       <div class="guide-row">
         <span class="guide-label">シナジー</span>
-        <span class="guide-text">特定の組み合わせが互いのTPSを+0.5%/人</span>
+        <span class="guide-text">雇うと特定のエンジニアのTPSが+1%/人</span>
       </div>
       <div class="guide-row">
         <span class="guide-label">マイルストーン</span>
@@ -134,20 +141,13 @@ function hire(definitionId: string): void {
         </div>
         <div class="synergy-list-detail">
           <span class="synergy-list-pair">
-            {{ syn.iconA }} {{ syn.nameA }}({{ syn.countA }})
-            ⇄
-            {{ syn.iconB }} {{ syn.nameB }}({{ syn.countB }})
+            {{ syn.sourceIcon }} {{ syn.sourceName }}({{ syn.sourceCount }})
+            → {{ syn.targetIcon }} {{ syn.targetName }}
           </span>
         </div>
         <div class="synergy-list-effects">
-          <span class="synergy-list-effect" v-if="syn.bonusToA > 0 || syn.bonusToB > 0">
-            <template v-if="syn.bonusToA > 0">
-              {{ syn.nameA }}に+{{ Math.round(syn.bonusToA) }}%
-            </template>
-            <template v-if="syn.bonusToA > 0 && syn.bonusToB > 0"> / </template>
-            <template v-if="syn.bonusToB > 0">
-              {{ syn.nameB }}に+{{ Math.round(syn.bonusToB) }}%
-            </template>
+          <span class="synergy-list-effect" v-if="syn.bonus > 0">
+            {{ syn.targetName }}に+{{ syn.bonus }}%
           </span>
           <span class="synergy-list-effect inactive" v-else>
             未発動
@@ -192,20 +192,30 @@ function hire(definitionId: string): void {
               {{ eng.count }}
             </span>
           </div>
-          <!-- シナジー -->
+          <!-- 受けるシナジー -->
           <div class="synergy-info" v-if="eng.synergyBonus > 0">
             <div
-              v-for="syn in eng.synergies.filter(s => s.partnerCount > 0)"
+              v-for="syn in eng.receivedSynergies.filter(s => s.sourceCount > 0)"
               :key="syn.name"
               class="synergy-pair"
             >
               <span class="synergy-pair-icon" aria-hidden="true">{{ syn.icon }}</span>
               <span class="synergy-pair-name">{{ syn.name }}</span>
-              <span class="synergy-pair-value">{{ syn.partnerCount }}人 +{{ Math.round(syn.receivedBonus) }}%</span>
+              <span class="synergy-pair-value">{{ syn.sourceCount }}人 +{{ syn.bonus }}%</span>
             </div>
             <div class="synergy-total">
               シナジー合計 +{{ Math.round(eng.synergyBonus * 100) }}%
             </div>
+          </div>
+          <!-- 与えるシナジー（雇う動機） -->
+          <div class="synergy-gives-info" v-if="eng.givesSynergies.length > 0">
+            <span
+              v-for="syn in eng.givesSynergies"
+              :key="syn.name"
+              class="synergy-gives-tag"
+            >
+              {{ syn.icon }} → {{ syn.targetName }}
+            </span>
           </div>
           <!-- 次のマイルストーン -->
           <div class="next-milestone" v-if="eng.nextMilestone && eng.count > 0">
@@ -531,6 +541,18 @@ function hire(definitionId: string): void {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 0.2rem;
   margin-top: 0.1rem;
+}
+
+.synergy-gives-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0 0.25rem;
+}
+
+.synergy-gives-tag {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .next-milestone {

@@ -2,35 +2,35 @@ import type { OwnedEngineer } from '../types/game'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
 
 /**
- * シナジーボーナス: 特定の組み合わせが互いを強化（クッキークリッカー方式）
+ * シナジーボーナス: sourceの人数がtargetのTPSを強化（片方向）
  *
- * 相手1人につき自分のTPS +0.5%（双方向同率）
- * 例: ジュニア50人 → ペアのミドルに+25%
+ * source 1人につき target のTPS +1%
+ * 例: ジュニア100人 → ミドルのTPSに+100%
  */
-const SYNERGY_RATE = 0.005
+const SYNERGY_RATE = 0.01
 
 export interface SynergyPair {
-  engineerA: string
-  engineerB: string
+  source: string
+  target: string
   name: string
   icon: string
 }
 
 export const SYNERGY_PAIRS: SynergyPair[] = [
-  // 同ティア帯
-  { engineerA: 'junior', engineerB: 'middle', name: 'ペアプロ', icon: '🤝' },
-  { engineerA: 'assistant', engineerB: 'senior', name: 'メンター制度', icon: '🎓' },
-  { engineerA: 'middle', engineerB: 'expert', name: '技術継承', icon: '📜' },
-  { engineerA: 'senior', engineerB: 'robot', name: '人機協調', icon: '🤖' },
-  { engineerA: 'expert', engineerB: 'wizard', name: '魔法工学', icon: '⚗️' },
-  { engineerA: 'robot', engineerB: 'dragon', name: '竜騎兵', icon: '🐲' },
-  { engineerA: 'wizard', engineerB: 'time-lord', name: '時空魔法', icon: '🌀' },
-  { engineerA: 'time-lord', engineerB: 'god', name: '神の祝福', icon: '✨' },
-  // クロスティア（低ティア × 高ティア）
-  { engineerA: 'assistant', engineerB: 'god', name: '神の寵愛', icon: '🙏' },
-  { engineerA: 'assistant', engineerB: 'wizard', name: '魔法使いの卵', icon: '🪄' },
-  { engineerA: 'junior', engineerB: 'dragon', name: '竜の弟子', icon: '🔥' },
-  { engineerA: 'middle', engineerB: 'time-lord', name: '時短術', icon: '⏱️' },
+  // 隣接ティア（低→高）
+  { source: 'junior', target: 'middle', name: 'ペアプロ', icon: '🤝' },
+  { source: 'assistant', target: 'senior', name: 'メンター制度', icon: '🎓' },
+  { source: 'middle', target: 'expert', name: '技術継承', icon: '📜' },
+  { source: 'senior', target: 'robot', name: '人機協調', icon: '🤖' },
+  { source: 'expert', target: 'wizard', name: '魔法工学', icon: '⚗️' },
+  { source: 'robot', target: 'dragon', name: '竜騎兵', icon: '🐲' },
+  { source: 'wizard', target: 'time-lord', name: '時空魔法', icon: '🌀' },
+  { source: 'time-lord', target: 'god', name: '神の祝福', icon: '✨' },
+  // クロスティア（低→高）
+  { source: 'assistant', target: 'god', name: '神の寵愛', icon: '🙏' },
+  { source: 'assistant', target: 'wizard', name: '魔法使いの卵', icon: '🪄' },
+  { source: 'junior', target: 'dragon', name: '竜の弟子', icon: '🔥' },
+  { source: 'middle', target: 'time-lord', name: '時短術', icon: '⏱️' },
 ]
 
 /**
@@ -76,16 +76,6 @@ function getCountById(engineers: OwnedEngineer[], definitionId: string): number 
   return engineers.find((e) => e.definitionId === definitionId)?.count ?? 0
 }
 
-/** 指定エンジニアのシナジーペア相手のID一覧を返す */
-function getSynergyPartnerIds(definitionId: string): string[] {
-  const partners: string[] = []
-  for (const pair of SYNERGY_PAIRS) {
-    if (pair.engineerA === definitionId) partners.push(pair.engineerB)
-    if (pair.engineerB === definitionId) partners.push(pair.engineerA)
-  }
-  return partners
-}
-
 export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary {
   const details: EngineerBonusDetail[] = []
 
@@ -105,12 +95,12 @@ export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary
 
     const digitBonus = calcDigitBonus(count)
 
-    // シナジーペアの相手人数から計算
-    const partnerIds = getSynergyPartnerIds(def.id)
+    // このエンジニアがtargetになっているシナジーのsource人数から計算
     let synergyBonus = 0
-    for (const partnerId of partnerIds) {
-      const partnerCount = getCountById(engineers, partnerId)
-      synergyBonus += partnerCount * SYNERGY_RATE
+    for (const pair of SYNERGY_PAIRS) {
+      if (pair.target !== def.id) continue
+      const sourceCount = getCountById(engineers, pair.source)
+      synergyBonus += sourceCount * SYNERGY_RATE
     }
 
     const effectiveTps = def.typesPerSecond * count * digitBonus * (1 + synergyBonus)
