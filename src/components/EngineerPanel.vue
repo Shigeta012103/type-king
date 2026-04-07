@@ -34,17 +34,6 @@ const engineerItems = computed(() => {
         }
       })
 
-    // このエンジニアがsourceのシナジー（与えるバフ先）
-    const givesSynergies = SYNERGY_PAIRS
-      .filter((p) => p.source === def.id)
-      .map((pair) => {
-        const targetDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.target)
-        return {
-          name: pair.name,
-          icon: pair.icon,
-          targetName: targetDef?.name ?? '',
-        }
-      })
 
     const nextMilestone = MILESTONES.find((ms) => count < ms.threshold)
 
@@ -57,7 +46,6 @@ const engineerItems = computed(() => {
       effectiveTps,
       locked,
       receivedSynergies,
-      givesSynergies,
       nextMilestone,
     }
   })
@@ -192,7 +180,7 @@ function hire(definitionId: string): void {
               {{ eng.count }}
             </span>
           </div>
-          <!-- 受けるシナジー -->
+          <!-- シナジー -->
           <div class="synergy-info" v-if="eng.synergyBonus > 0">
             <div
               v-for="syn in eng.receivedSynergies.filter(s => s.sourceCount > 0)"
@@ -201,21 +189,11 @@ function hire(definitionId: string): void {
             >
               <span class="synergy-pair-icon" aria-hidden="true">{{ syn.icon }}</span>
               <span class="synergy-pair-name">{{ syn.name }}</span>
-              <span class="synergy-pair-value">{{ syn.sourceCount }}人 +{{ syn.bonus }}%</span>
+              <span class="synergy-pair-value">+{{ syn.bonus }}%</span>
             </div>
             <div class="synergy-total">
-              シナジー合計 +{{ Math.round(eng.synergyBonus * 100) }}%
+              合計 +{{ Math.round(eng.synergyBonus * 100) }}%
             </div>
-          </div>
-          <!-- 与えるシナジー（雇う動機） -->
-          <div class="synergy-gives-info" v-if="eng.givesSynergies.length > 0">
-            <span
-              v-for="syn in eng.givesSynergies"
-              :key="syn.name"
-              class="synergy-gives-tag"
-            >
-              {{ syn.icon }} → {{ syn.targetName }}
-            </span>
           </div>
           <!-- 次のマイルストーン -->
           <div class="next-milestone" v-if="eng.nextMilestone && eng.count > 0">
@@ -541,18 +519,6 @@ function hire(definitionId: string): void {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 0.2rem;
   margin-top: 0.1rem;
-}
-
-.synergy-gives-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  padding: 0 0.25rem;
-}
-
-.synergy-gives-tag {
-  font-size: 0.6rem;
-  color: rgba(255, 255, 255, 0.3);
 }
 
 .next-milestone {
