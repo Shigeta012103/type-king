@@ -19,18 +19,17 @@ const engineerItems = computed(() => {
     const synergyBonus = detail?.synergyBonus ?? 0
     const effectiveTps = detail?.effectiveTps ?? 0
 
-    // このエンジニアがtargetのシナジー（受けるバフ）
-    const receivedSynergies = SYNERGY_PAIRS
-      .filter((p) => p.target === def.id)
+    // このエンジニアが属するシナジーペア情報
+    const synergies = SYNERGY_PAIRS
+      .filter((p) => p.engineerA === def.id || p.engineerB === def.id)
       .map((pair) => {
-        const sourceDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.source)
-        const sourceCount = store.engineers.find((e) => e.definitionId === pair.source)?.count ?? 0
+        const partnerId = pair.engineerA === def.id ? pair.engineerB : pair.engineerA
+        const partnerCount = store.engineers.find((e) => e.definitionId === partnerId)?.count ?? 0
         return {
           name: pair.name,
           icon: pair.icon,
-          sourceName: sourceDef?.name ?? '',
-          sourceCount,
-          bonus: sourceCount,
+          partnerCount,
+          bonus: Math.round(partnerCount * 0.5),
         }
       })
 
@@ -45,7 +44,7 @@ const engineerItems = computed(() => {
       synergyBonus,
       effectiveTps,
       locked,
-      receivedSynergies,
+      synergies,
       nextMilestone,
     }
   })
@@ -54,17 +53,19 @@ const engineerItems = computed(() => {
 // シナジー一覧用データ
 const synergyListItems = computed(() => {
   return SYNERGY_PAIRS.map((pair) => {
-    const sourceDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.source)
-    const targetDef = ENGINEER_DEFINITIONS.find((d) => d.id === pair.target)
-    const sourceCount = store.engineers.find((e) => e.definitionId === pair.source)?.count ?? 0
+    const defA = ENGINEER_DEFINITIONS.find((d) => d.id === pair.engineerA)
+    const defB = ENGINEER_DEFINITIONS.find((d) => d.id === pair.engineerB)
+    const countA = store.engineers.find((e) => e.definitionId === pair.engineerA)?.count ?? 0
+    const countB = store.engineers.find((e) => e.definitionId === pair.engineerB)?.count ?? 0
     return {
       ...pair,
-      sourceName: sourceDef?.name ?? '',
-      targetName: targetDef?.name ?? '',
-      sourceIcon: sourceDef?.icon ?? '',
-      targetIcon: targetDef?.icon ?? '',
-      sourceCount,
-      bonus: sourceCount,
+      nameA: defA?.name ?? '',
+      nameB: defB?.name ?? '',
+      iconA: defA?.icon ?? '',
+      iconB: defB?.icon ?? '',
+      countA,
+      countB,
+      active: countA > 0 && countB > 0,
     }
   })
 })
@@ -87,7 +88,7 @@ function hire(definitionId: string): void {
       </div>
       <div class="guide-row">
         <span class="guide-label">シナジー</span>
-        <span class="guide-text">雇うと特定のエンジニアのTPSが+1%/人</span>
+        <span class="guide-text">特定の組み合わせが互いのTPSを+0.5%/人</span>
       </div>
       <div class="guide-row">
         <span class="guide-label">マイルストーン</span>
@@ -129,17 +130,14 @@ function hire(definitionId: string): void {
         </div>
         <div class="synergy-list-detail">
           <span class="synergy-list-pair">
-            {{ syn.sourceIcon }} {{ syn.sourceName }}({{ syn.sourceCount }})
-            → {{ syn.targetIcon }} {{ syn.targetName }}
+            {{ syn.iconA }} {{ syn.nameA }}({{ syn.countA }})
+            ⇄
+            {{ syn.iconB }} {{ syn.nameB }}({{ syn.countB }})
           </span>
         </div>
         <div class="synergy-list-effects">
-          <span class="synergy-list-effect" v-if="syn.bonus > 0">
-            {{ syn.targetName }}に+{{ syn.bonus }}%
-          </span>
-          <span class="synergy-list-effect inactive" v-else>
-            未発動
-          </span>
+          <span class="synergy-list-effect" v-if="syn.active">発動中</span>
+          <span class="synergy-list-effect inactive" v-else>未発動</span>
         </div>
       </div>
     </div>
@@ -183,7 +181,7 @@ function hire(definitionId: string): void {
           <!-- シナジー -->
           <div class="synergy-info" v-if="eng.synergyBonus > 0">
             <div
-              v-for="syn in eng.receivedSynergies.filter(s => s.sourceCount > 0)"
+              v-for="syn in eng.synergies.filter(s => s.partnerCount > 0)"
               :key="syn.name"
               class="synergy-pair"
             >
