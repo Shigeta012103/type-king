@@ -18,15 +18,20 @@ const engineerItems = computed(() => {
     const synergyBonus = detail?.synergyBonus ?? 0
     const effectiveTps = detail?.effectiveTps ?? 0
 
-    // シナジー説明文を生成
+    // シナジー説明文を生成（全ティア、距離で減衰）
+    const LOWER_RATES = [0, 0.5, 0.3, 0.1]
+    const UPPER_RATES = [0, 5, 3, 1]
     const synergyDescs: string[] = []
-    if (idx > 0) {
-      const lowerName = ENGINEER_DEFINITIONS[idx - 1].name
-      synergyDescs.push(`${lowerName}1人で+0.5%`)
-    }
-    if (idx < ENGINEER_DEFINITIONS.length - 1) {
-      const upperName = ENGINEER_DEFINITIONS[idx + 1].name
-      synergyDescs.push(`${upperName}1人で+5%`)
+    for (let j = 0; j < ENGINEER_DEFINITIONS.length; j++) {
+      if (j === idx) continue
+      const distance = Math.abs(idx - j)
+      const rateIdx = Math.min(distance, 3)
+      const name = ENGINEER_DEFINITIONS[j].name
+      if (j < idx) {
+        synergyDescs.push(`${name}1人+${LOWER_RATES[rateIdx]}%`)
+      } else {
+        synergyDescs.push(`${name}1人+${UPPER_RATES[rateIdx]}%`)
+      }
     }
 
     // 次のマイルストーン
@@ -64,7 +69,7 @@ function hire(definitionId: string): void {
       </div>
       <div class="guide-row">
         <span class="guide-label">シナジー</span>
-        <span class="guide-text">隣り合うランクが互いを強化</span>
+        <span class="guide-text">全ランクが互いを強化（近いほど効果大）</span>
       </div>
       <div class="guide-row">
         <span class="guide-label">マイルストーン</span>
