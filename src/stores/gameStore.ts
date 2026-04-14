@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { OwnedEngineer, OwnedUpgrade, OwnedFeverUpgrade } from '../types/game'
+import type { OwnedEngineer, OwnedUpgrade, OwnedFeverUpgrade, OwnedPrestigeUpgrade } from '../types/game'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
 import { calcAllEngineerBonuses } from '../utils/engineerBonus'
 import {
@@ -9,6 +9,8 @@ import {
   LEVEL_COST_GROWTH,
 } from '../constants/upgrades'
 import { FEVER_UPGRADE_DEFINITIONS } from '../constants/feverUpgrades'
+import { PRESTIGE_UPGRADE_DEFINITIONS } from '../constants/prestigeUpgrades'
+import { calcPrestigeLevel } from '../utils/prestige'
 import { formatNumber } from '../utils/formatNumber'
 
 const SAVE_KEY = 'type-king-save'
@@ -18,6 +20,7 @@ const BASE_FEVER_INTERVAL_MS = 60_000
 const BASE_FEVER_WARN_MS = 5_000
 const BASE_FEVER_DURATION_MS = 30_000
 const BASE_FEVER_MULTIPLIER = 3
+const STARTING_FUND_AMOUNT = 10_000
 
 function calcLevelBonus(basePower: number, level: number): number {
   return basePower * Math.pow(LEVEL_POWER_GROWTH, level - 1)
@@ -43,6 +46,14 @@ export const useGameStore = defineStore('game', () => {
     FEVER_UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
   )
 
+  // --- 転生 ---
+  const lifetimeTypesEarned = ref(0)
+  const currentRunTypesEarned = ref(0)
+  const prestigeCount = ref(0)
+  const prestigeUpgrades = ref<OwnedPrestigeUpgrade[]>(
+    PRESTIGE_UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, purchased: false }))
+  )
+
   // 表示形式
   const useShortFormat = ref(false)
 
@@ -54,6 +65,62 @@ export const useGameStore = defineStore('game', () => {
     if (useShortFormat.value) return formatNumber(value)
     return Math.floor(value).toLocaleString()
   }
+
+  // --- 転生ヘルパー ---
+  function hasPrestigeUpgrade(upgradeId: string): boolean {
+    return prestigeUpgrades.value.find((u) => u.definitionId === upgradeId)?.purchased ?? false
+  }
+
+  // --- 転生レベル & ポイント ---
+  const prestigeLevel = computed(() => calcPrestigeLevel(lifetimeTypesEarned.value))
+  const potentialPrestigeLevel = computed(() =>
+    calcPrestigeLevel(lifetimeTypesEarned.value + currentRunTypesEarned.value)
+  )
+  const spentPrestigePoints = computed(() => {
+    let spent = 0
+    for (const owned of prestigeUpgrades.value) {
+      if (!owned.purchased) continue
+      const def = PRESTIGE_UPGRADE_DEFINITIONS.find((d) => d.id === owned.definitionId)
+      if (def) spent += def.cost
+    }
+    return spent
+  })
+  const availablePrestigePoints = computed(() => prestigeLevel.value - spentPrestigePoints.value)
+  const newPointsOnSell = computed(() => potentialPrestigeLevel.value - prestigeLevel.value)
+
+  // --- 転生バフ ---
+  const prestigeTypingBonus = computed(() => {
+    let bonus = 0
+    if (hasPrestigeUpgrade('typing-memory-1')) bonus += 0.10
+    if (hasPrestigeUpgrade('typing-memory-2')) bonus += 0.25
+    if (hasPrestigeUpgrade('typing-mastery')) bonus += 1.00
+    return bonus
+  })
+
+  const prestigeTpsBonus = computed(() => {
+    let bonus = 0
+    if (hasPrestigeUpgrade('tps-memory-1')) bonus += 0.10
+    if (hasPrestigeUpgrade('tps-memory-2')) bonus += 0.25
+    if (hasPrestigeUpgrade('tps-mastery')) bonus += 1.00
+    return bonus
+  })
+
+  const prestigePassiveMultiplier = computed(() => 1 + prestigeLevel.value * 0.01)
+
+  const prestigeAllMultiplier = computed(() => hasPrestigeUpgrade('hand-of-god') ? 2 : 1)
+
+  const prestigeProductionMultiplier = computed(() =>
+    prestigePassiveMultiplier.value * prestigeAllMultiplier.value
+  )
+
+  const prestigeCostMultiplier = computed(() => hasPrestigeUpgrade('cost-efficiency') ? 0.9 : 1)
+
+  const prestigeOfflineMultiplier = computed(() => hasPrestigeUpgrade('timekeeper') ? 2 : 1)
+
+  const effectiveIpoCost = computed(() => {
+    const base = hasPrestigeUpgrade('early-ipo') ? IPO_COST * 0.5 : IPO_COST
+    return Math.floor(base * prestigeCostMultiplier.value)
+  })
 
   // フィーバー状態
   const isFeverActive = ref(false)
@@ -78,20 +145,22 @@ export const useGameStore = defineStore('game', () => {
   const MIN_FEVER_COOLDOWN_MS = 15_000
 
   const feverMultiplier = computed(() =>
-    BASE_FEVER_MULTIPLIER + feverBoostLevel.value
+    BASE_FEVER_MULTIPLIER + feverBoostLevel.value + (hasPrestigeUpgrade('fever-echo') ? 1 : 0)
   )
   const feverDurationMs = computed(() =>
-    BASE_FEVER_DURATION_MS + feverExtendLevel.value * 5000
+    BASE_FEVER_DURATION_MS + feverExtendLevel.value * 5000 + (hasPrestigeUpgrade('fever-sustain') ? 10_000 : 0)
   )
-  const feverCooldownMs = computed(() =>
-    Math.max(MIN_FEVER_COOLDOWN_MS, BASE_FEVER_INTERVAL_MS - feverCooldownLevel.value * 5000)
-  )
+  const feverCooldownMs = computed(() => {
+    const base = Math.max(MIN_FEVER_COOLDOWN_MS, BASE_FEVER_INTERVAL_MS - feverCooldownLevel.value * 5000)
+    const chainMultiplier = hasPrestigeUpgrade('fever-chain') ? 0.5 : 1
+    return Math.max(MIN_FEVER_COOLDOWN_MS, Math.floor(base * chainMultiplier))
+  })
   // シンクロ: Lv.1=33%, Lv.2=66%, Lv.3+=100% のフィーバー倍率を自動タイプに適用
   const feverSyncRate = computed(() =>
     Math.min(feverSyncLevel.value / 3, 1)
   )
 
-  // タイピング倍率
+  // タイピング倍率（転生バフ込み）
   const typingMultiplier = computed(() => {
     let bonus = 0
     for (const owned of upgrades.value) {
@@ -101,20 +170,21 @@ export const useGameStore = defineStore('game', () => {
         bonus += calcTotalUpgradeBonus(def.basePower, owned.level)
       }
     }
-    return 1 + bonus
+    return (1 + bonus) * (1 + prestigeTypingBonus.value)
   })
 
   const effectiveTypingMultiplier = computed(() => {
     const fever = isFeverActive.value ? feverMultiplier.value : 1
-    return typingMultiplier.value * fever
+    return typingMultiplier.value * fever * prestigeProductionMultiplier.value
   })
 
   const engineerBonusSummary = computed(() =>
     calcAllEngineerBonuses(engineers.value)
   )
 
+  // TPS（転生バフ込み）
   const typesPerSecond = computed(() =>
-    engineerBonusSummary.value.totalTps
+    engineerBonusSummary.value.totalTps * (1 + prestigeTpsBonus.value) * prestigeProductionMultiplier.value
   )
 
   const effectiveTpsMultiplier = computed(() => {
@@ -123,15 +193,17 @@ export const useGameStore = defineStore('game', () => {
   })
 
   function addTypes(count: number): void {
-    totalTypes.value += count * effectiveTypingMultiplier.value
+    const earned = count * effectiveTypingMultiplier.value
+    totalTypes.value += earned
+    currentRunTypesEarned.value += earned
   }
 
   // --- IPO ---
-  const canIpo = computed(() => !isIpoed.value && totalTypes.value >= IPO_COST)
+  const canIpo = computed(() => !isIpoed.value && totalTypes.value >= effectiveIpoCost.value)
 
   function doIpo(): boolean {
-    if (isIpoed.value || totalTypes.value < IPO_COST) return false
-    totalTypes.value -= IPO_COST
+    if (isIpoed.value || totalTypes.value < effectiveIpoCost.value) return false
+    totalTypes.value -= effectiveIpoCost.value
     isIpoed.value = true
     saveGame()
     return true
@@ -142,7 +214,7 @@ export const useGameStore = defineStore('game', () => {
     const def = ENGINEER_DEFINITIONS.find((d) => d.id === definitionId)
     const owned = engineers.value.find((e) => e.definitionId === definitionId)
     if (!def || !owned) return Infinity
-    return Math.floor(def.baseCost * Math.pow(def.costMultiplier, owned.count))
+    return Math.floor(def.baseCost * Math.pow(def.costMultiplier, owned.count) * prestigeCostMultiplier.value)
   }
 
   function hireEngineer(definitionId: string): boolean {
@@ -166,7 +238,7 @@ export const useGameStore = defineStore('game', () => {
     const def = UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
     const owned = upgrades.value.find((u) => u.definitionId === definitionId)
     if (!def || !owned) return Infinity
-    return Math.floor(def.baseCost * Math.pow(LEVEL_COST_GROWTH, owned.level))
+    return Math.floor(def.baseCost * Math.pow(LEVEL_COST_GROWTH, owned.level) * prestigeCostMultiplier.value)
   }
 
   function getUpgradeNextBonus(definitionId: string): number {
@@ -204,7 +276,7 @@ export const useGameStore = defineStore('game', () => {
     const def = FEVER_UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
     const owned = feverUpgrades.value.find((u) => u.definitionId === definitionId)
     if (!def || !owned) return Infinity
-    return Math.floor(def.baseCost * Math.pow(def.costGrowth, owned.level))
+    return Math.floor(def.baseCost * Math.pow(def.costGrowth, owned.level) * prestigeCostMultiplier.value)
   }
 
   function purchaseFeverUpgrade(definitionId: string): boolean {
@@ -216,6 +288,48 @@ export const useGameStore = defineStore('game', () => {
     if (owned) {
       owned.level++
     }
+    saveGame()
+    return true
+  }
+
+  // --- 転生アクション ---
+  function purchasePrestigeUpgrade(upgradeId: string): boolean {
+    const def = PRESTIGE_UPGRADE_DEFINITIONS.find((d) => d.id === upgradeId)
+    if (!def) return false
+    const owned = prestigeUpgrades.value.find((u) => u.definitionId === upgradeId)
+    if (!owned || owned.purchased) return false
+    if (availablePrestigePoints.value < def.cost) return false
+
+    owned.purchased = true
+    saveGame()
+    return true
+  }
+
+  function performPrestige(): boolean {
+    if (potentialPrestigeLevel.value <= 0) return false
+
+    // 現ランの稼ぎを通算に加算
+    lifetimeTypesEarned.value += currentRunTypesEarned.value
+    currentRunTypesEarned.value = 0
+
+    // 初期資金（転生バフ）
+    const startingTypes = hasPrestigeUpgrade('starting-fund') ? STARTING_FUND_AMOUNT : 0
+
+    // ゲーム状態リセット
+    totalTypes.value = startingTypes
+    isIpoed.value = false
+    engineers.value = ENGINEER_DEFINITIONS.map((def) => ({ definitionId: def.id, count: 0 }))
+    upgrades.value = UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
+    feverUpgrades.value = FEVER_UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
+
+    // フィーバー状態リセット
+    isFeverActive.value = false
+    isFeverWarning.value = false
+    feverRemainingMs.value = 0
+    nextFeverMs.value = feverCooldownMs.value
+
+    prestigeCount.value++
+
     saveGame()
     return true
   }
@@ -234,6 +348,7 @@ export const useGameStore = defineStore('game', () => {
     const increment = typesPerSecond.value * (elapsedMs / 1000) * autoMult
     if (increment > 0) {
       totalTypes.value += increment
+      currentRunTypesEarned.value += increment
     }
 
     updateFeverTimer(elapsedMs)
@@ -252,8 +367,9 @@ export const useGameStore = defineStore('game', () => {
       hiddenAt = 0
 
       if (offlineMs > 0 && typesPerSecond.value > 0) {
-        const offlineGain = typesPerSecond.value * (offlineMs / 1000)
+        const offlineGain = typesPerSecond.value * (offlineMs / 1000) * prestigeOfflineMultiplier.value
         totalTypes.value += offlineGain
+        currentRunTypesEarned.value += offlineGain
       }
 
       // フィーバータイマーも経過分進める
@@ -307,6 +423,10 @@ export const useGameStore = defineStore('game', () => {
       engineers: engineers.value,
       upgrades: upgrades.value,
       feverUpgrades: feverUpgrades.value,
+      lifetimeTypesEarned: lifetimeTypesEarned.value,
+      currentRunTypesEarned: currentRunTypesEarned.value,
+      prestigeCount: prestigeCount.value,
+      prestigeUpgrades: prestigeUpgrades.value,
       savedAt: Date.now(),
     }
     try {
@@ -358,12 +478,29 @@ export const useGameStore = defineStore('game', () => {
         }
       }
 
+      // 転生データ読み込み（旧セーブ互換: 未保存なら現在のtotalTypesを暫定値に）
+      lifetimeTypesEarned.value = saveData.lifetimeTypesEarned ?? 0
+      currentRunTypesEarned.value = saveData.currentRunTypesEarned ?? totalTypes.value
+      prestigeCount.value = saveData.prestigeCount ?? 0
+
+      if (Array.isArray(saveData.prestigeUpgrades)) {
+        for (const saved of saveData.prestigeUpgrades) {
+          const owned = prestigeUpgrades.value.find(
+            (u) => u.definitionId === saved.definitionId
+          )
+          if (owned) {
+            owned.purchased = saved.purchased ?? false
+          }
+        }
+      }
+
       // オフライン中の自動タイプ分を加算
       if (saveData.savedAt) {
         const elapsedSeconds = (Date.now() - saveData.savedAt) / 1000
-        const offlineGain = typesPerSecond.value * elapsedSeconds
+        const offlineGain = typesPerSecond.value * elapsedSeconds * prestigeOfflineMultiplier.value
         if (offlineGain > 0) {
           totalTypes.value += offlineGain
+          currentRunTypesEarned.value += offlineGain
         }
       }
     } catch {
@@ -396,6 +533,7 @@ export const useGameStore = defineStore('game', () => {
     feverSyncRate,
     nextFeverMs,
     canIpo,
+    effectiveIpoCost,
     doIpo,
     addTypes,
     getEngineerCost,
@@ -410,5 +548,21 @@ export const useGameStore = defineStore('game', () => {
     stopAutoTick,
     saveGame,
     loadGame,
+    // 転生
+    lifetimeTypesEarned,
+    currentRunTypesEarned,
+    prestigeCount,
+    prestigeUpgrades,
+    prestigeLevel,
+    potentialPrestigeLevel,
+    availablePrestigePoints,
+    newPointsOnSell,
+    spentPrestigePoints,
+    prestigeProductionMultiplier,
+    prestigeTypingBonus,
+    prestigeTpsBonus,
+    hasPrestigeUpgrade,
+    purchasePrestigeUpgrade,
+    performPrestige,
   }
 })

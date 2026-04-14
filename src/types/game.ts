@@ -43,6 +43,19 @@ export interface OwnedFeverUpgrade {
   level: number
 }
 
+export interface PrestigeUpgradeDefinition {
+  id: string
+  name: string
+  description: string
+  cost: number
+  icon: string
+}
+
+export interface OwnedPrestigeUpgrade {
+  definitionId: string
+  purchased: boolean
+}
+
 export interface WordEntry {
   display: string
   reading: string

@@ -6,12 +6,13 @@ import TypingArea from './components/TypingArea.vue'
 import EngineerPanel from './components/EngineerPanel.vue'
 import UpgradePanel from './components/UpgradePanel.vue'
 import FeverPanel from './components/FeverPanel.vue'
+import PrestigePanel from './components/PrestigePanel.vue'
 
-type SideTab = 'engineers' | 'upgrades' | 'fever'
+type SideTab = 'engineers' | 'upgrades' | 'fever' | 'prestige'
 
 const store = useGameStore()
 const activeTab = ref<SideTab>('engineers')
-const ipoCostDisplay = computed(() => store.fmt(1_000_000_000))
+const ipoCostDisplay = computed(() => store.fmt(store.effectiveIpoCost))
 
 function handleIpo(): void {
   store.doIpo()
@@ -93,11 +94,21 @@ onUnmounted(() => {
           >
             🔥 FEVER
           </button>
+          <button
+            role="tab"
+            class="tab-button"
+            :class="{ active: activeTab === 'prestige' }"
+            :aria-selected="activeTab === 'prestige'"
+            @click="activeTab = 'prestige'"
+          >
+            🔄 転生
+          </button>
         </nav>
         <div class="tab-content" role="tabpanel">
           <EngineerPanel v-show="activeTab === 'engineers'" />
           <UpgradePanel v-show="activeTab === 'upgrades'" />
           <FeverPanel v-show="activeTab === 'fever'" />
+          <PrestigePanel v-show="activeTab === 'prestige'" />
         </div>
       </aside>
     </main>
