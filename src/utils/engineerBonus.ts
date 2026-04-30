@@ -76,15 +76,26 @@ function getCountById(engineers: OwnedEngineer[], definitionId: string): number 
   return engineers.find((e) => e.definitionId === definitionId)?.count ?? 0
 }
 
-export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary {
+export interface EngineerBonusOptions {
+  synergyMultiplier?: number
+  baseTpsMultiplier?: number
+}
+
+export function calcAllEngineerBonuses(
+  engineers: OwnedEngineer[],
+  options: EngineerBonusOptions = {}
+): BonusSummary {
+  const synergyMultiplier = options.synergyMultiplier ?? 1
+  const baseTpsMultiplier = options.baseTpsMultiplier ?? 1
   const details: EngineerBonusDetail[] = []
 
   for (const def of ENGINEER_DEFINITIONS) {
     const count = getCountById(engineers, def.id)
+    const baseTps = def.typesPerSecond * baseTpsMultiplier
     if (count === 0) {
       details.push({
         definitionId: def.id,
-        baseTps: def.typesPerSecond,
+        baseTps,
         count: 0,
         digitBonus: 1,
         synergyBonus: 0,
@@ -95,7 +106,6 @@ export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary
 
     const digitBonus = calcDigitBonus(count)
 
-    // シナジーペアの相手人数から計算（双方向）
     let synergyBonus = 0
     for (const pair of SYNERGY_PAIRS) {
       if (pair.engineerA === def.id) {
@@ -104,12 +114,13 @@ export function calcAllEngineerBonuses(engineers: OwnedEngineer[]): BonusSummary
         synergyBonus += getCountById(engineers, pair.engineerA) * SYNERGY_RATE
       }
     }
+    synergyBonus *= synergyMultiplier
 
-    const effectiveTps = def.typesPerSecond * count * digitBonus * (1 + synergyBonus)
+    const effectiveTps = baseTps * count * digitBonus * (1 + synergyBonus)
 
     details.push({
       definitionId: def.id,
-      baseTps: def.typesPerSecond,
+      baseTps,
       count,
       digitBonus,
       synergyBonus,

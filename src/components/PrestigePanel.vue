@@ -17,9 +17,13 @@ const upgradeItems = computed(() =>
 
 const canPrestige = computed(() => store.potentialPrestigeLevel > 0)
 
-const currentBonusPercent = computed(() => Math.round(store.prestigeLevel * 1))
+const currentBonusPercent = computed(() =>
+  Math.round(store.prestigeLevel * store.prestigePassiveRate * 100)
+)
 
-const potentialBonusPercent = computed(() => Math.round(store.potentialPrestigeLevel * 1))
+const potentialBonusPercent = computed(() =>
+  Math.round(store.potentialPrestigeLevel * store.prestigePassiveRate * 100)
+)
 
 function purchaseUpgrade(upgradeId: string): void {
   store.purchasePrestigeUpgrade(upgradeId)
@@ -64,7 +68,7 @@ function cancelSell(): void {
         <span class="passive-title">受動ボーナス</span>
       </div>
       <p class="passive-desc">
-        転生レベル1につき全生産力+1%
+        転生レベル1につき全生産力+{{ Math.round(store.prestigePassiveRate * 100 * 10) / 10 }}%
       </p>
       <div class="passive-current" v-if="store.prestigeLevel > 0">
         現在: <span class="passive-value">+{{ currentBonusPercent }}%</span>
