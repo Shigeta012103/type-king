@@ -93,7 +93,9 @@ export const useGameStore = defineStore('game', () => {
     let bonus = 0
     if (hasPrestigeUpgrade('typing-memory-1')) bonus += 0.10
     if (hasPrestigeUpgrade('typing-memory-2')) bonus += 0.25
+    if (hasPrestigeUpgrade('click-combo')) bonus += 0.25
     if (hasPrestigeUpgrade('typing-mastery')) bonus += 1.00
+    if (hasPrestigeUpgrade('click-mastery')) bonus += 2.00
     return bonus
   })
 
@@ -105,9 +107,19 @@ export const useGameStore = defineStore('game', () => {
     return bonus
   })
 
-  const prestigePassiveMultiplier = computed(() => 1 + prestigeLevel.value * 0.01)
+  const prestigePassiveRate = computed(() =>
+    hasPrestigeUpgrade('prestige-resonance') ? 0.015 : 0.01
+  )
+  const prestigePassiveMultiplier = computed(() =>
+    1 + prestigeLevel.value * prestigePassiveRate.value
+  )
 
-  const prestigeAllMultiplier = computed(() => hasPrestigeUpgrade('hand-of-god') ? 2 : 1)
+  const prestigeAllMultiplier = computed(() => {
+    let mult = 1
+    if (hasPrestigeUpgrade('hand-of-god')) mult *= 2
+    if (hasPrestigeUpgrade('ascension')) mult *= 2
+    return mult
+  })
 
   const prestigeProductionMultiplier = computed(() =>
     prestigePassiveMultiplier.value * prestigeAllMultiplier.value
@@ -174,12 +186,19 @@ export const useGameStore = defineStore('game', () => {
   })
 
   const effectiveTypingMultiplier = computed(() => {
-    const fever = isFeverActive.value ? feverMultiplier.value : 1
+    let fever = 1
+    if (isFeverActive.value) {
+      fever = feverMultiplier.value
+      if (hasPrestigeUpgrade('fever-frenzy')) fever += 1
+    }
     return typingMultiplier.value * fever * prestigeProductionMultiplier.value
   })
 
   const engineerBonusSummary = computed(() =>
-    calcAllEngineerBonuses(engineers.value)
+    calcAllEngineerBonuses(engineers.value, {
+      synergyMultiplier: hasPrestigeUpgrade('synergy-amp') ? 2 : 1,
+      baseTpsMultiplier: hasPrestigeUpgrade('engineer-elite') ? 1.5 : 1,
+    })
   )
 
   // TPS（転生バフ込み）
@@ -203,7 +222,11 @@ export const useGameStore = defineStore('game', () => {
 
   function doIpo(): boolean {
     if (isIpoed.value || totalTypes.value < effectiveIpoCost.value) return false
-    totalTypes.value -= effectiveIpoCost.value
+    const cost = effectiveIpoCost.value
+    totalTypes.value -= cost
+    if (hasPrestigeUpgrade('ipo-refund')) {
+      totalTypes.value += Math.floor(cost * 0.2)
+    }
     isIpoed.value = true
     saveGame()
     return true
@@ -318,7 +341,14 @@ export const useGameStore = defineStore('game', () => {
     // ゲーム状態リセット
     totalTypes.value = startingTypes
     isIpoed.value = false
-    engineers.value = ENGINEER_DEFINITIONS.map((def) => ({ definitionId: def.id, count: 0 }))
+    engineers.value = ENGINEER_DEFINITIONS.map((def) => {
+      let count = 0
+      if (hasPrestigeUpgrade('starter-junior') && def.id === 'junior') count = 1
+      if (hasPrestigeUpgrade('starter-pack') && (def.id === 'assistant' || def.id === 'junior' || def.id === 'middle')) {
+        count = Math.max(count, 1)
+      }
+      return { definitionId: def.id, count }
+    })
     upgrades.value = UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
     feverUpgrades.value = FEVER_UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
 
@@ -559,6 +589,7 @@ export const useGameStore = defineStore('game', () => {
     newPointsOnSell,
     spentPrestigePoints,
     prestigeProductionMultiplier,
+    prestigePassiveRate,
     prestigeTypingBonus,
     prestigeTpsBonus,
     hasPrestigeUpgrade,
