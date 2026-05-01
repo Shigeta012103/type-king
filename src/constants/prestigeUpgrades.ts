@@ -182,4 +182,87 @@ export const PRESTIGE_UPGRADE_DEFINITIONS: PrestigeUpgradeDefinition[] = [
     cost: 50,
     icon: '🌌',
   },
+
+  // --- Tier 8: 超高額 ---
+  {
+    id: 'milestone-awakening',
+    name: 'マイルストーン覚醒',
+    description: 'マイルストーンボーナスが2倍になる',
+    cost: 60,
+    icon: '🏆',
+  },
+  {
+    id: 'cost-mastery',
+    name: '錬金の極意',
+    description: '全ての購入コストがさらに-20%（コスト効率化と乗算）',
+    cost: 70,
+    icon: '🪙',
+  },
+  {
+    id: 'synergy-supreme',
+    name: '至高のシナジー',
+    description: 'エンジニア間のシナジー効果がさらに2倍（共鳴増幅と乗算で4倍）',
+    cost: 80,
+    icon: '💞',
+  },
+  {
+    id: 'engineer-master',
+    name: '神域の教え',
+    description: '全エンジニアの基本TPSがさらに+100%（エリート教育と乗算）',
+    cost: 80,
+    icon: '🎖️',
+  },
+  {
+    id: 'click-divine',
+    name: '神速の指',
+    description: 'タイピング倍率が永続で+500%',
+    cost: 80,
+    icon: '🌪️',
+  },
+  {
+    id: 'tps-divine',
+    name: '無尽の軍団',
+    description: '自動TPSが永続で+500%',
+    cost: 80,
+    icon: '🛡️',
+  },
+
+  // --- Tier 9: 極限 ---
+  {
+    id: 'fever-eternal',
+    name: '永遠のフィーバー',
+    description: 'フィーバー倍率の基本値+3、持続時間+20秒',
+    cost: 100,
+    icon: '🌋',
+  },
+  {
+    id: 'prestige-resonance-2',
+    name: '転生極大化',
+    description: '転生レベルあたりの受動ボーナスがさらに+1.5%（共鳴と合わせて3%/Lv）',
+    cost: 100,
+    icon: '💫',
+  },
+  {
+    id: 'time-master',
+    name: '時の支配者',
+    description: 'オフライン収益がさらに2.5倍（タイムキーパーと合わせて5倍）',
+    cost: 100,
+    icon: '⏳',
+  },
+  {
+    id: 'genesis',
+    name: '創世の光',
+    description: '全ての生産力が3倍',
+    cost: 150,
+    icon: '☀️',
+  },
+
+  // --- Tier 10: 神話 ---
+  {
+    id: 'infinity',
+    name: '無限永劫',
+    description: '全ての生産力がさらに5倍（神の手・超越・創世と合わせて60倍）',
+    cost: 300,
+    icon: '♾️',
+  },
 ]
