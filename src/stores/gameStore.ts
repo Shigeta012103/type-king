@@ -96,6 +96,7 @@ export const useGameStore = defineStore('game', () => {
     if (hasPrestigeUpgrade('click-combo')) bonus += 0.25
     if (hasPrestigeUpgrade('typing-mastery')) bonus += 1.00
     if (hasPrestigeUpgrade('click-mastery')) bonus += 2.00
+    if (hasPrestigeUpgrade('click-divine')) bonus += 5.00
     return bonus
   })
 
@@ -104,12 +105,16 @@ export const useGameStore = defineStore('game', () => {
     if (hasPrestigeUpgrade('tps-memory-1')) bonus += 0.10
     if (hasPrestigeUpgrade('tps-memory-2')) bonus += 0.25
     if (hasPrestigeUpgrade('tps-mastery')) bonus += 1.00
+    if (hasPrestigeUpgrade('tps-divine')) bonus += 5.00
     return bonus
   })
 
-  const prestigePassiveRate = computed(() =>
-    hasPrestigeUpgrade('prestige-resonance') ? 0.015 : 0.01
-  )
+  const prestigePassiveRate = computed(() => {
+    let rate = 0.01
+    if (hasPrestigeUpgrade('prestige-resonance')) rate += 0.005
+    if (hasPrestigeUpgrade('prestige-resonance-2')) rate += 0.015
+    return rate
+  })
   const prestigePassiveMultiplier = computed(() =>
     1 + prestigeLevel.value * prestigePassiveRate.value
   )
@@ -118,6 +123,8 @@ export const useGameStore = defineStore('game', () => {
     let mult = 1
     if (hasPrestigeUpgrade('hand-of-god')) mult *= 2
     if (hasPrestigeUpgrade('ascension')) mult *= 2
+    if (hasPrestigeUpgrade('genesis')) mult *= 3
+    if (hasPrestigeUpgrade('infinity')) mult *= 5
     return mult
   })
 
@@ -125,9 +132,19 @@ export const useGameStore = defineStore('game', () => {
     prestigePassiveMultiplier.value * prestigeAllMultiplier.value
   )
 
-  const prestigeCostMultiplier = computed(() => hasPrestigeUpgrade('cost-efficiency') ? 0.9 : 1)
+  const prestigeCostMultiplier = computed(() => {
+    let mult = 1
+    if (hasPrestigeUpgrade('cost-efficiency')) mult *= 0.9
+    if (hasPrestigeUpgrade('cost-mastery')) mult *= 0.8
+    return mult
+  })
 
-  const prestigeOfflineMultiplier = computed(() => hasPrestigeUpgrade('timekeeper') ? 2 : 1)
+  const prestigeOfflineMultiplier = computed(() => {
+    let mult = 1
+    if (hasPrestigeUpgrade('timekeeper')) mult *= 2
+    if (hasPrestigeUpgrade('time-master')) mult *= 2.5
+    return mult
+  })
 
   const effectiveIpoCost = computed(() => {
     const base = hasPrestigeUpgrade('early-ipo') ? IPO_COST * 0.5 : IPO_COST
@@ -157,10 +174,16 @@ export const useGameStore = defineStore('game', () => {
   const MIN_FEVER_COOLDOWN_MS = 15_000
 
   const feverMultiplier = computed(() =>
-    BASE_FEVER_MULTIPLIER + feverBoostLevel.value + (hasPrestigeUpgrade('fever-echo') ? 1 : 0)
+    BASE_FEVER_MULTIPLIER
+    + feverBoostLevel.value
+    + (hasPrestigeUpgrade('fever-echo') ? 1 : 0)
+    + (hasPrestigeUpgrade('fever-eternal') ? 3 : 0)
   )
   const feverDurationMs = computed(() =>
-    BASE_FEVER_DURATION_MS + feverExtendLevel.value * 5000 + (hasPrestigeUpgrade('fever-sustain') ? 10_000 : 0)
+    BASE_FEVER_DURATION_MS
+    + feverExtendLevel.value * 5000
+    + (hasPrestigeUpgrade('fever-sustain') ? 10_000 : 0)
+    + (hasPrestigeUpgrade('fever-eternal') ? 20_000 : 0)
   )
   const feverCooldownMs = computed(() => {
     const base = Math.max(MIN_FEVER_COOLDOWN_MS, BASE_FEVER_INTERVAL_MS - feverCooldownLevel.value * 5000)
@@ -194,12 +217,21 @@ export const useGameStore = defineStore('game', () => {
     return typingMultiplier.value * fever * prestigeProductionMultiplier.value
   })
 
-  const engineerBonusSummary = computed(() =>
-    calcAllEngineerBonuses(engineers.value, {
-      synergyMultiplier: hasPrestigeUpgrade('synergy-amp') ? 2 : 1,
-      baseTpsMultiplier: hasPrestigeUpgrade('engineer-elite') ? 1.5 : 1,
+  const engineerBonusSummary = computed(() => {
+    let synergyMult = 1
+    if (hasPrestigeUpgrade('synergy-amp')) synergyMult *= 2
+    if (hasPrestigeUpgrade('synergy-supreme')) synergyMult *= 2
+
+    let baseTpsMult = 1
+    if (hasPrestigeUpgrade('engineer-elite')) baseTpsMult *= 1.5
+    if (hasPrestigeUpgrade('engineer-master')) baseTpsMult *= 2
+
+    return calcAllEngineerBonuses(engineers.value, {
+      synergyMultiplier: synergyMult,
+      baseTpsMultiplier: baseTpsMult,
+      milestoneMultiplier: hasPrestigeUpgrade('milestone-awakening') ? 2 : 1,
     })
-  )
+  })
 
   // TPS（転生バフ込み）
   const typesPerSecond = computed(() =>

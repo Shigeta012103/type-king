@@ -79,6 +79,7 @@ function getCountById(engineers: OwnedEngineer[], definitionId: string): number 
 export interface EngineerBonusOptions {
   synergyMultiplier?: number
   baseTpsMultiplier?: number
+  milestoneMultiplier?: number
 }
 
 export function calcAllEngineerBonuses(
@@ -87,6 +88,7 @@ export function calcAllEngineerBonuses(
 ): BonusSummary {
   const synergyMultiplier = options.synergyMultiplier ?? 1
   const baseTpsMultiplier = options.baseTpsMultiplier ?? 1
+  const milestoneMultiplier = options.milestoneMultiplier ?? 1
   const details: EngineerBonusDetail[] = []
 
   for (const def of ENGINEER_DEFINITIONS) {
@@ -141,6 +143,7 @@ export function calcAllEngineerBonuses(
   }
 
   // マイルストーンを全体に適用
+  milestoneBonus *= milestoneMultiplier
   const globalMultiplier = 1 + milestoneBonus
   let totalTps = 0
   for (const detail of details) {
