@@ -7,11 +7,13 @@ import EngineerPanel from './components/EngineerPanel.vue'
 import UpgradePanel from './components/UpgradePanel.vue'
 import FeverPanel from './components/FeverPanel.vue'
 import PrestigePanel from './components/PrestigePanel.vue'
+import AdminPanel from './components/AdminPanel.vue'
 
 type SideTab = 'engineers' | 'upgrades' | 'fever' | 'prestige'
 
 const store = useGameStore()
 const activeTab = ref<SideTab>('engineers')
+const adminOpen = ref(false)
 const ipoCostDisplay = computed(() => store.fmt(store.effectiveIpoCost))
 
 function handleIpo(): void {
@@ -37,7 +39,16 @@ onUnmounted(() => {
         Type King
         <span class="ipo-badge" v-if="store.isIpoed">上場企業</span>
       </h1>
+      <button
+        class="admin-toggle"
+        aria-label="管理画面を開く"
+        @click="adminOpen = true"
+      >
+        🔧
+      </button>
     </header>
+
+    <AdminPanel :open="adminOpen" @close="adminOpen = false" />
 
     <main class="game-main">
       <div class="center-column">
@@ -126,9 +137,35 @@ onUnmounted(() => {
 }
 
 .game-header {
+  position: relative;
   text-align: center;
   padding: 0.75rem 0 1rem;
   flex-shrink: 0;
+}
+
+.admin-toggle {
+  position: absolute;
+  top: 0.75rem;
+  right: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .game-title {

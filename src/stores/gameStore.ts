@@ -474,6 +474,68 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
+  // --- 管理画面用 ---
+  function adminSetTotalTypes(value: number): void {
+    if (!isFinite(value) || value < 0) return
+    totalTypes.value = value
+    saveGame()
+  }
+
+  function adminSetLifetimeTypes(value: number): void {
+    if (!isFinite(value) || value < 0) return
+    lifetimeTypesEarned.value = value
+    saveGame()
+  }
+
+  function adminSetCurrentRunTypes(value: number): void {
+    if (!isFinite(value) || value < 0) return
+    currentRunTypesEarned.value = value
+    saveGame()
+  }
+
+  function adminSetPrestigeCount(value: number): void {
+    if (!isFinite(value) || value < 0) return
+    prestigeCount.value = Math.floor(value)
+    saveGame()
+  }
+
+  function adminResetPrestigeUpgrades(): void {
+    for (const owned of prestigeUpgrades.value) {
+      owned.purchased = false
+    }
+    saveGame()
+  }
+
+  function adminResetRepeatablePrestiges(): void {
+    for (const owned of repeatablePrestiges.value) {
+      owned.level = 0
+    }
+    saveGame()
+  }
+
+  function adminResetCurrentRun(): void {
+    totalTypes.value = 0
+    isIpoed.value = false
+    engineers.value = ENGINEER_DEFINITIONS.map((def) => ({ definitionId: def.id, count: 0 }))
+    upgrades.value = UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
+    feverUpgrades.value = FEVER_UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
+    currentRunTypesEarned.value = 0
+    isFeverActive.value = false
+    isFeverWarning.value = false
+    feverRemainingMs.value = 0
+    nextFeverMs.value = BASE_FEVER_INTERVAL_MS
+    saveGame()
+  }
+
+  function adminFullReset(): void {
+    adminResetCurrentRun()
+    lifetimeTypesEarned.value = 0
+    prestigeCount.value = 0
+    adminResetPrestigeUpgrades()
+    adminResetRepeatablePrestiges()
+    saveGame()
+  }
+
   // --- ティック ---
   let tickInterval: ReturnType<typeof setInterval> | null = null
   let lastTickTime = 0
@@ -723,5 +785,14 @@ export const useGameStore = defineStore('game', () => {
     getRepeatablePrestigeCost,
     purchaseRepeatablePrestige,
     performPrestige,
+    // 管理画面
+    adminSetTotalTypes,
+    adminSetLifetimeTypes,
+    adminSetCurrentRunTypes,
+    adminSetPrestigeCount,
+    adminResetPrestigeUpgrades,
+    adminResetRepeatablePrestiges,
+    adminResetCurrentRun,
+    adminFullReset,
   }
 })
