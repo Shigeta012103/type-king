@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { OwnedEngineer, OwnedUpgrade, OwnedFeverUpgrade, OwnedPrestigeUpgrade } from '../types/game'
+import type {
+  OwnedEngineer,
+  OwnedUpgrade,
+  OwnedFeverUpgrade,
+  OwnedPrestigeUpgrade,
+  OwnedRepeatablePrestige,
+} from '../types/game'
 import { ENGINEER_DEFINITIONS } from '../constants/engineers'
 import { calcAllEngineerBonuses } from '../utils/engineerBonus'
 import {
@@ -10,6 +16,7 @@ import {
 } from '../constants/upgrades'
 import { FEVER_UPGRADE_DEFINITIONS } from '../constants/feverUpgrades'
 import { PRESTIGE_UPGRADE_DEFINITIONS } from '../constants/prestigeUpgrades'
+import { REPEATABLE_PRESTIGE_DEFINITIONS } from '../constants/repeatablePrestige'
 import { calcPrestigeLevel } from '../utils/prestige'
 import { formatNumber } from '../utils/formatNumber'
 
@@ -53,6 +60,9 @@ export const useGameStore = defineStore('game', () => {
   const prestigeUpgrades = ref<OwnedPrestigeUpgrade[]>(
     PRESTIGE_UPGRADE_DEFINITIONS.map((def) => ({ definitionId: def.id, purchased: false }))
   )
+  const repeatablePrestiges = ref<OwnedRepeatablePrestige[]>(
+    REPEATABLE_PRESTIGE_DEFINITIONS.map((def) => ({ definitionId: def.id, level: 0 }))
+  )
 
   // 表示形式
   const useShortFormat = ref(false)
@@ -71,6 +81,26 @@ export const useGameStore = defineStore('game', () => {
     return prestigeUpgrades.value.find((u) => u.definitionId === upgradeId)?.purchased ?? false
   }
 
+  function getRepeatablePrestigeLevel(upgradeId: string): number {
+    return repeatablePrestiges.value.find((u) => u.definitionId === upgradeId)?.level ?? 0
+  }
+
+  function getRepeatablePrestigeCost(upgradeId: string): number {
+    const def = REPEATABLE_PRESTIGE_DEFINITIONS.find((d) => d.id === upgradeId)
+    if (!def) return Infinity
+    const level = getRepeatablePrestigeLevel(upgradeId)
+    return Math.ceil(def.baseCost * Math.pow(def.costGrowth, level))
+  }
+
+  function getRepeatablePrestigeTotalSpent(upgradeId: string): number {
+    const def = REPEATABLE_PRESTIGE_DEFINITIONS.find((d) => d.id === upgradeId)
+    if (!def) return 0
+    const level = getRepeatablePrestigeLevel(upgradeId)
+    if (level === 0) return 0
+    const sum = def.baseCost * (Math.pow(def.costGrowth, level) - 1) / (def.costGrowth - 1)
+    return Math.ceil(sum)
+  }
+
   // --- 転生レベル & ポイント ---
   const prestigeLevel = computed(() => calcPrestigeLevel(lifetimeTypesEarned.value))
   const potentialPrestigeLevel = computed(() =>
@@ -82,6 +112,9 @@ export const useGameStore = defineStore('game', () => {
       if (!owned.purchased) continue
       const def = PRESTIGE_UPGRADE_DEFINITIONS.find((d) => d.id === owned.definitionId)
       if (def) spent += def.cost
+    }
+    for (const owned of repeatablePrestiges.value) {
+      spent += getRepeatablePrestigeTotalSpent(owned.definitionId)
     }
     return spent
   })
@@ -97,6 +130,7 @@ export const useGameStore = defineStore('game', () => {
     if (hasPrestigeUpgrade('typing-mastery')) bonus += 1.00
     if (hasPrestigeUpgrade('click-mastery')) bonus += 2.00
     if (hasPrestigeUpgrade('click-divine')) bonus += 5.00
+    bonus += getRepeatablePrestigeLevel('eternal-training') * 0.20
     return bonus
   })
 
@@ -106,6 +140,7 @@ export const useGameStore = defineStore('game', () => {
     if (hasPrestigeUpgrade('tps-memory-2')) bonus += 0.25
     if (hasPrestigeUpgrade('tps-mastery')) bonus += 1.00
     if (hasPrestigeUpgrade('tps-divine')) bonus += 5.00
+    bonus += getRepeatablePrestigeLevel('infinite-efficiency') * 0.20
     return bonus
   })
 
@@ -125,6 +160,8 @@ export const useGameStore = defineStore('game', () => {
     if (hasPrestigeUpgrade('ascension')) mult *= 2
     if (hasPrestigeUpgrade('genesis')) mult *= 3
     if (hasPrestigeUpgrade('infinity')) mult *= 5
+    const compressionLevel = getRepeatablePrestigeLevel('dimension-compression')
+    if (compressionLevel > 0) mult *= 1 + compressionLevel * 0.05
     return mult
   })
 
@@ -388,6 +425,19 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
+  function purchaseRepeatablePrestige(upgradeId: string): boolean {
+    const def = REPEATABLE_PRESTIGE_DEFINITIONS.find((d) => d.id === upgradeId)
+    if (!def) return false
+    const owned = repeatablePrestiges.value.find((u) => u.definitionId === upgradeId)
+    if (!owned) return false
+    const cost = getRepeatablePrestigeCost(upgradeId)
+    if (availablePrestigePoints.value < cost) return false
+
+    owned.level++
+    saveGame()
+    return true
+  }
+
   function performPrestige(): boolean {
     if (potentialPrestigeLevel.value <= 0) return false
 
@@ -517,6 +567,7 @@ export const useGameStore = defineStore('game', () => {
       currentRunTypesEarned: currentRunTypesEarned.value,
       prestigeCount: prestigeCount.value,
       prestigeUpgrades: prestigeUpgrades.value,
+      repeatablePrestiges: repeatablePrestiges.value,
       savedAt: Date.now(),
     }
     try {
@@ -584,6 +635,17 @@ export const useGameStore = defineStore('game', () => {
         }
       }
 
+      if (Array.isArray(saveData.repeatablePrestiges)) {
+        for (const saved of saveData.repeatablePrestiges) {
+          const owned = repeatablePrestiges.value.find(
+            (u) => u.definitionId === saved.definitionId
+          )
+          if (owned) {
+            owned.level = saved.level ?? 0
+          }
+        }
+      }
+
       // オフライン中の自動タイプ分を加算
       if (saveData.savedAt) {
         const elapsedSeconds = (Date.now() - saveData.savedAt) / 1000
@@ -645,6 +707,7 @@ export const useGameStore = defineStore('game', () => {
     currentRunTypesEarned,
     prestigeCount,
     prestigeUpgrades,
+    repeatablePrestiges,
     prestigeLevel,
     potentialPrestigeLevel,
     availablePrestigePoints,
@@ -656,6 +719,9 @@ export const useGameStore = defineStore('game', () => {
     prestigeTpsBonus,
     hasPrestigeUpgrade,
     purchasePrestigeUpgrade,
+    getRepeatablePrestigeLevel,
+    getRepeatablePrestigeCost,
+    purchaseRepeatablePrestige,
     performPrestige,
   }
 })

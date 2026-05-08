@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { PRESTIGE_UPGRADE_DEFINITIONS } from '../constants/prestigeUpgrades'
+import { REPEATABLE_PRESTIGE_DEFINITIONS } from '../constants/repeatablePrestige'
 
 const store = useGameStore()
 const confirmingSell = ref(false)
@@ -12,6 +13,16 @@ const upgradeItems = computed(() =>
     const purchased = owned?.purchased ?? false
     const canAfford = !purchased && store.availablePrestigePoints >= def.cost
     return { ...def, purchased, canAfford }
+  })
+)
+
+const repeatableItems = computed(() =>
+  REPEATABLE_PRESTIGE_DEFINITIONS.map((def) => {
+    const level = store.getRepeatablePrestigeLevel(def.id)
+    const cost = store.getRepeatablePrestigeCost(def.id)
+    const canAfford = store.availablePrestigePoints >= cost
+    const currentEffectPercent = Math.round(level * def.effectPerLevel * 100)
+    return { ...def, level, cost, canAfford, currentEffectPercent }
   })
 )
 
@@ -27,6 +38,10 @@ const potentialBonusPercent = computed(() =>
 
 function purchaseUpgrade(upgradeId: string): void {
   store.purchasePrestigeUpgrade(upgradeId)
+}
+
+function purchaseRepeatable(upgradeId: string): void {
+  store.purchaseRepeatablePrestige(upgradeId)
 }
 
 function handleSell(): void {
@@ -135,6 +150,36 @@ function cancelSell(): void {
           v-if="!upgrade.purchased"
         >
           {{ upgrade.cost }}pt
+        </span>
+      </button>
+    </div>
+
+    <!-- 無限強化 -->
+    <h3 class="section-title infinite-title">無限強化</h3>
+    <p class="section-desc">購入するたびにコストが上がる、上限なしのバフ</p>
+    <div class="upgrade-list">
+      <button
+        v-for="rep in repeatableItems"
+        :key="rep.id"
+        class="prestige-card repeatable"
+        :class="{ affordable: rep.canAfford, owned: rep.level > 0 }"
+        :disabled="!rep.canAfford"
+        :aria-label="`${rep.name}を1レベル取得 現在Lv.${rep.level} コスト${rep.cost}ポイント`"
+        @click="purchaseRepeatable(rep.id)"
+      >
+        <span class="card-icon" aria-hidden="true">{{ rep.icon }}</span>
+        <div class="card-info">
+          <div class="card-name-row">
+            <span class="card-name">{{ rep.name }}</span>
+            <span class="card-level" v-if="rep.level > 0">Lv.{{ rep.level }}</span>
+          </div>
+          <span class="card-desc">{{ rep.description }}</span>
+          <span class="card-current" v-if="rep.level > 0">
+            現在: +{{ rep.currentEffectPercent }}%
+          </span>
+        </div>
+        <span class="card-cost" :class="{ affordable: rep.canAfford }">
+          {{ rep.cost }}pt
         </span>
       </button>
     </div>
@@ -341,6 +386,45 @@ function cancelSell(): void {
   font-weight: 700;
   color: #c084fc;
   margin: 0 0 0.5rem;
+}
+
+.section-title.infinite-title {
+  color: #fbbf24;
+  margin-top: 0.75rem;
+}
+
+.section-desc {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0 0 0.5rem;
+}
+
+.prestige-card.repeatable.owned {
+  opacity: 1;
+  background: rgba(251, 191, 36, 0.06);
+  border-color: rgba(251, 191, 36, 0.25);
+  cursor: pointer;
+}
+
+.prestige-card.repeatable:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.card-level {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.15);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.card-current {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4ade80;
+  margin-top: 0.1rem;
 }
 
 /* アップグレードリスト */
