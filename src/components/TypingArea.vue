@@ -72,6 +72,14 @@ function onKeyDown(event: KeyboardEvent): void {
   if (event.ctrlKey || event.altKey || event.metaKey) return
   if (event.key.length !== 1) return
 
+  const target = event.target as HTMLElement | null
+  if (target) {
+    const tag = target.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) {
+      return
+    }
+  }
+
   event.preventDefault()
   handleKeyPress(event.key.toLowerCase())
 }
