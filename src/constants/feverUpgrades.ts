@@ -24,6 +24,7 @@ export const FEVER_UPGRADE_DEFINITIONS: FeverUpgradeDefinition[] = [
     baseCost: 10000000,
     costGrowth: 8,
     icon: '⚡',
+    maxLevel: 9,
   },
   {
     id: 'fever-sync',
@@ -32,5 +33,6 @@ export const FEVER_UPGRADE_DEFINITIONS: FeverUpgradeDefinition[] = [
     baseCost: 100000000,
     costGrowth: 15,
     icon: '🔄',
+    maxLevel: 3,
   },
 ]

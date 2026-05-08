@@ -288,6 +288,25 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
+  function hireEngineerMax(definitionId: string): number {
+    const def = ENGINEER_DEFINITIONS.find((d) => d.id === definitionId)
+    const owned = engineers.value.find((e) => e.definitionId === definitionId)
+    if (!def || !owned) return 0
+    if (def.requiresIpo && !isIpoed.value) return 0
+
+    let purchasedCount = 0
+    while (true) {
+      const cost = getEngineerCost(definitionId)
+      if (totalTypes.value < cost) break
+      totalTypes.value -= cost
+      owned.count++
+      purchasedCount++
+    }
+
+    if (purchasedCount > 0) saveGame()
+    return purchasedCount
+  }
+
   // --- アップグレード ---
   function getUpgradeCost(definitionId: string): number {
     const def = UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
@@ -327,14 +346,23 @@ export const useGameStore = defineStore('game', () => {
   }
 
   // --- フィーバーアップグレード ---
+  function isFeverUpgradeMaxed(definitionId: string): boolean {
+    const def = FEVER_UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
+    const owned = feverUpgrades.value.find((u) => u.definitionId === definitionId)
+    if (!def || !owned) return false
+    return def.maxLevel !== undefined && owned.level >= def.maxLevel
+  }
+
   function getFeverUpgradeCost(definitionId: string): number {
     const def = FEVER_UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
     const owned = feverUpgrades.value.find((u) => u.definitionId === definitionId)
     if (!def || !owned) return Infinity
+    if (isFeverUpgradeMaxed(definitionId)) return Infinity
     return Math.floor(def.baseCost * Math.pow(def.costGrowth, owned.level) * prestigeCostMultiplier.value)
   }
 
   function purchaseFeverUpgrade(definitionId: string): boolean {
+    if (isFeverUpgradeMaxed(definitionId)) return false
     const cost = getFeverUpgradeCost(definitionId)
     if (totalTypes.value < cost) return false
 
@@ -600,11 +628,13 @@ export const useGameStore = defineStore('game', () => {
     addTypes,
     getEngineerCost,
     hireEngineer,
+    hireEngineerMax,
     getUpgradeCost,
     getUpgradeNextBonus,
     getUpgradeTotalBonus,
     purchaseUpgrade,
     getFeverUpgradeCost,
+    isFeverUpgradeMaxed,
     purchaseFeverUpgrade,
     startAutoTick,
     stopAutoTick,

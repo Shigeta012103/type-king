@@ -36,6 +36,7 @@ export interface FeverUpgradeDefinition {
   baseCost: number
   costGrowth: number
   icon: string
+  maxLevel?: number
 }
 
 export interface OwnedFeverUpgrade {
