@@ -104,4 +104,14 @@ export const ENGINEER_DEFINITIONS: EngineerDefinition[] = [
     icon: '🌟',
     requiresIpo: true,
   },
+  {
+    id: 'creator',
+    name: '創造主',
+    description: '宇宙の根源、タイピングそのものを生み出す存在',
+    typesPerSecond: 1500000,
+    baseCost: 5000000000000000,
+    costMultiplier: 1.25,
+    icon: '🌠',
+    requiresIpo: true,
+  },
 ]

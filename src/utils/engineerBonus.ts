@@ -26,11 +26,13 @@ export const SYNERGY_PAIRS: SynergyPair[] = [
   { engineerA: 'robot', engineerB: 'dragon', name: '竜騎兵', icon: '🐲' },
   { engineerA: 'wizard', engineerB: 'time-lord', name: '時空魔法', icon: '🌀' },
   { engineerA: 'time-lord', engineerB: 'god', name: '神の祝福', icon: '✨' },
+  { engineerA: 'god', engineerB: 'creator', name: '創世神話', icon: '🌌' },
   // クロスティア
   { engineerA: 'assistant', engineerB: 'god', name: '神の寵愛', icon: '🙏' },
   { engineerA: 'assistant', engineerB: 'wizard', name: '魔法使いの卵', icon: '🪄' },
   { engineerA: 'junior', engineerB: 'dragon', name: '竜の弟子', icon: '🔥' },
   { engineerA: 'middle', engineerB: 'time-lord', name: '時短術', icon: '⏱️' },
+  { engineerA: 'assistant', engineerB: 'creator', name: '無からの創造', icon: '✨' },
 ]
 
 /**
@@ -48,6 +50,9 @@ const MILESTONES: Milestone[] = [
   { threshold: 25, globalBonus: 0.10, label: '25人' },
   { threshold: 50, globalBonus: 0.15, label: '50人' },
   { threshold: 100, globalBonus: 0.25, label: '100人' },
+  { threshold: 250, globalBonus: 0.50, label: '250人' },
+  { threshold: 500, globalBonus: 1.00, label: '500人' },
+  { threshold: 1000, globalBonus: 2.00, label: '1000人' },
 ]
 
 export interface EngineerBonusDetail {
