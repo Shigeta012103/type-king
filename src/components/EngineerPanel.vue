@@ -76,6 +76,11 @@ const milestoneCount = computed(() => store.engineerBonusSummary.milestoneCount)
 function hire(definitionId: string): void {
   store.hireEngineer(definitionId)
 }
+
+function hireMax(definitionId: string, event: Event): void {
+  event.stopPropagation()
+  store.hireEngineerMax(definitionId)
+}
 </script>
 
 <template>
@@ -143,9 +148,12 @@ function hire(definitionId: string): void {
     </div>
 
     <div class="engineer-list">
-      <button
+      <div
         v-for="eng in engineerItems"
         :key="eng.id"
+        class="engineer-card-row"
+      >
+      <button
         class="engineer-card"
         :class="{
           affordable: eng.canAfford,
@@ -213,6 +221,17 @@ function hire(definitionId: string): void {
           </div>
         </template>
       </button>
+        <button
+          v-if="!eng.locked"
+          class="engineer-max-btn"
+          :class="{ affordable: eng.canAfford }"
+          :disabled="!eng.canAfford"
+          :aria-label="`${eng.name}を買えるだけ買う`"
+          @click="hireMax(eng.id, $event)"
+        >
+          MAX
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -228,7 +247,15 @@ function hire(definitionId: string): void {
   gap: 0.5rem;
 }
 
+.engineer-card-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
 .engineer-card {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -242,6 +269,39 @@ function hire(definitionId: string): void {
   color: inherit;
   font-family: inherit;
   font-size: inherit;
+}
+
+.engineer-max-btn {
+  flex-shrink: 0;
+  width: 3rem;
+  padding: 0.5rem 0.4rem;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 12px;
+  color: rgba(74, 222, 128, 0.5);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.engineer-max-btn.affordable {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #4ade80;
+}
+
+.engineer-max-btn:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: rgba(74, 222, 128, 0.7);
+  transform: translateY(-1px);
+}
+
+.engineer-max-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .engineer-card:hover:not(:disabled) {

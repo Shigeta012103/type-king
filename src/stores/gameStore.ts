@@ -288,6 +288,25 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
+  function hireEngineerMax(definitionId: string): number {
+    const def = ENGINEER_DEFINITIONS.find((d) => d.id === definitionId)
+    const owned = engineers.value.find((e) => e.definitionId === definitionId)
+    if (!def || !owned) return 0
+    if (def.requiresIpo && !isIpoed.value) return 0
+
+    let purchasedCount = 0
+    while (true) {
+      const cost = getEngineerCost(definitionId)
+      if (totalTypes.value < cost) break
+      totalTypes.value -= cost
+      owned.count++
+      purchasedCount++
+    }
+
+    if (purchasedCount > 0) saveGame()
+    return purchasedCount
+  }
+
   // --- アップグレード ---
   function getUpgradeCost(definitionId: string): number {
     const def = UPGRADE_DEFINITIONS.find((d) => d.id === definitionId)
@@ -600,6 +619,7 @@ export const useGameStore = defineStore('game', () => {
     addTypes,
     getEngineerCost,
     hireEngineer,
+    hireEngineerMax,
     getUpgradeCost,
     getUpgradeNextBonus,
     getUpgradeTotalBonus,
