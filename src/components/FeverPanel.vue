@@ -12,6 +12,7 @@ interface FeverItemDisplay {
   level: number
   cost: number
   canAfford: boolean
+  isMaxed: boolean
   currentEffect: string
   nextEffect: string
 }
@@ -20,8 +21,9 @@ const feverItems = computed((): FeverItemDisplay[] =>
   FEVER_UPGRADE_DEFINITIONS.map((def) => {
     const owned = store.feverUpgrades.find((u) => u.definitionId === def.id)
     const level = owned?.level ?? 0
+    const isMaxed = store.isFeverUpgradeMaxed(def.id)
     const cost = store.getFeverUpgradeCost(def.id)
-    const canAfford = store.totalTypes >= cost
+    const canAfford = !isMaxed && store.totalTypes >= cost
 
     let currentEffect = ''
     let nextEffect = ''
@@ -51,7 +53,7 @@ const feverItems = computed((): FeverItemDisplay[] =>
       }
     }
 
-    return { id: def.id, name: def.name, icon: def.icon, level, cost, canAfford, currentEffect, nextEffect }
+    return { id: def.id, name: def.name, icon: def.icon, level, cost, canAfford, isMaxed, currentEffect, nextEffect }
   })
 )
 
@@ -85,9 +87,11 @@ function purchase(definitionId: string): void {
         v-for="fever in feverItems"
         :key="fever.id"
         class="fever-card"
-        :class="{ affordable: fever.canAfford, owned: fever.level > 0 }"
+        :class="{ affordable: fever.canAfford, owned: fever.level > 0, maxed: fever.isMaxed }"
         :disabled="!fever.canAfford"
-        :aria-label="`${fever.name}を購入 Lv.${fever.level} コスト${fever.cost}タイプ`"
+        :aria-label="fever.isMaxed
+          ? `${fever.name}は最大レベル到達済み`
+          : `${fever.name}を購入 Lv.${fever.level} コスト${fever.cost}タイプ`"
         @click="purchase(fever.id)"
       >
         <span class="fever-icon-display" aria-hidden="true">{{ fever.icon }}</span>
@@ -103,7 +107,8 @@ function purchase(definitionId: string): void {
             <span class="fever-next">{{ fever.nextEffect }}</span>
           </div>
         </div>
-        <span class="fever-cost" :class="{ affordable: fever.canAfford }">
+        <span v-if="fever.isMaxed" class="fever-cost maxed-label">MAX</span>
+        <span v-else class="fever-cost" :class="{ affordable: fever.canAfford }">
           {{ store.fmt(fever.cost) }}
         </span>
       </button>
@@ -245,5 +250,22 @@ function purchase(definitionId: string): void {
 
 .fever-cost.affordable {
   color: #4ade80;
+}
+
+.fever-card.maxed {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fever-card.maxed:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: none;
+}
+
+.maxed-label {
+  color: #fbbf24;
+  font-weight: 800;
+  letter-spacing: 0.05em;
 }
 </style>
