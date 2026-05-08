@@ -12,32 +12,56 @@ const lifetimeTypesInput = ref('')
 const currentRunTypesInput = ref('')
 const prestigeCountInput = ref('')
 
+function parseNumberInput(raw: string): number | null {
+  const trimmed = raw.replace(/[, _\s]/g, '')
+  if (trimmed === '') return null
+  const value = Number(trimmed)
+  if (!isFinite(value) || value < 0) return null
+  return value
+}
+
 function applyTotalTypes(): void {
-  const value = Number(totalTypesInput.value)
-  if (!isFinite(value) || value < 0) return
+  const value = parseNumberInput(totalTypesInput.value)
+  if (value === null) return
   store.adminSetTotalTypes(value)
   totalTypesInput.value = ''
 }
 
 function applyLifetimeTypes(): void {
-  const value = Number(lifetimeTypesInput.value)
-  if (!isFinite(value) || value < 0) return
+  const value = parseNumberInput(lifetimeTypesInput.value)
+  if (value === null) return
   store.adminSetLifetimeTypes(value)
   lifetimeTypesInput.value = ''
 }
 
 function applyCurrentRunTypes(): void {
-  const value = Number(currentRunTypesInput.value)
-  if (!isFinite(value) || value < 0) return
+  const value = parseNumberInput(currentRunTypesInput.value)
+  if (value === null) return
   store.adminSetCurrentRunTypes(value)
   currentRunTypesInput.value = ''
 }
 
 function applyPrestigeCount(): void {
-  const value = Number(prestigeCountInput.value)
-  if (!isFinite(value) || value < 0) return
+  const value = parseNumberInput(prestigeCountInput.value)
+  if (value === null) return
   store.adminSetPrestigeCount(value)
   prestigeCountInput.value = ''
+}
+
+function fillFromCurrent(target: 'total' | 'lifetime' | 'currentRun' | 'prestigeCount'): void {
+  const sources: Record<typeof target, number> = {
+    total: store.totalTypes,
+    lifetime: store.lifetimeTypesEarned,
+    currentRun: store.currentRunTypesEarned,
+    prestigeCount: store.prestigeCount,
+  }
+  const targets: Record<typeof target, typeof totalTypesInput> = {
+    total: totalTypesInput,
+    lifetime: lifetimeTypesInput,
+    currentRun: currentRunTypesInput,
+    prestigeCount: prestigeCountInput,
+  }
+  targets[target].value = String(Math.floor(sources[target]))
 }
 
 function confirmAndRun(message: string, action: () => void): void {
@@ -93,18 +117,23 @@ function close(): void {
       <section class="admin-section">
         <h3 class="section-heading">値を変更</h3>
         <p class="section-note">
-          累計タイプ数を下げると転生Lvと所持Ptも自動的に下がります
+          指数表記（例: <code>1e15</code>）・カンマ区切り（例: <code>1,000,000</code>）も使えます。<br>
+          累計タイプ数を変えると転生Lvと所持Ptが追従します。
         </p>
         <div class="edit-row">
           <label for="total-types">総タイプ数</label>
           <input
             id="total-types"
             v-model="totalTypesInput"
-            type="number"
-            min="0"
-            step="any"
-            :placeholder="String(Math.floor(store.totalTypes))"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            :placeholder="`現在: ${Math.floor(store.totalTypes).toLocaleString()}`"
+            @keydown.enter="applyTotalTypes"
           />
+          <button class="copy-button" aria-label="現在値を入力欄にコピー" @click="fillFromCurrent('total')">
+            ⎘
+          </button>
           <button class="apply-button" @click="applyTotalTypes">適用</button>
         </div>
         <div class="edit-row">
@@ -112,11 +141,15 @@ function close(): void {
           <input
             id="lifetime-types"
             v-model="lifetimeTypesInput"
-            type="number"
-            min="0"
-            step="any"
-            :placeholder="String(Math.floor(store.lifetimeTypesEarned))"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            :placeholder="`現在: ${Math.floor(store.lifetimeTypesEarned).toLocaleString()}`"
+            @keydown.enter="applyLifetimeTypes"
           />
+          <button class="copy-button" aria-label="現在値を入力欄にコピー" @click="fillFromCurrent('lifetime')">
+            ⎘
+          </button>
           <button class="apply-button" @click="applyLifetimeTypes">適用</button>
         </div>
         <div class="edit-row">
@@ -124,11 +157,15 @@ function close(): void {
           <input
             id="current-run-types"
             v-model="currentRunTypesInput"
-            type="number"
-            min="0"
-            step="any"
-            :placeholder="String(Math.floor(store.currentRunTypesEarned))"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            :placeholder="`現在: ${Math.floor(store.currentRunTypesEarned).toLocaleString()}`"
+            @keydown.enter="applyCurrentRunTypes"
           />
+          <button class="copy-button" aria-label="現在値を入力欄にコピー" @click="fillFromCurrent('currentRun')">
+            ⎘
+          </button>
           <button class="apply-button" @click="applyCurrentRunTypes">適用</button>
         </div>
         <div class="edit-row">
@@ -136,11 +173,15 @@ function close(): void {
           <input
             id="prestige-count"
             v-model="prestigeCountInput"
-            type="number"
-            min="0"
-            step="1"
-            :placeholder="String(store.prestigeCount)"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            :placeholder="`現在: ${store.prestigeCount}`"
+            @keydown.enter="applyPrestigeCount"
           />
+          <button class="copy-button" aria-label="現在値を入力欄にコピー" @click="fillFromCurrent('prestigeCount')">
+            ⎘
+          </button>
           <button class="apply-button" @click="applyPrestigeCount">適用</button>
         </div>
       </section>
@@ -284,8 +325,8 @@ function close(): void {
 
 .edit-row {
   display: grid;
-  grid-template-columns: 7rem 1fr auto;
-  gap: 0.5rem;
+  grid-template-columns: 6rem 1fr auto auto;
+  gap: 0.4rem;
   align-items: center;
   margin-bottom: 0.4rem;
 }
@@ -326,6 +367,31 @@ function close(): void {
 
 .apply-button:hover {
   background: rgba(167, 139, 250, 0.3);
+}
+
+.copy-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.copy-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.section-note code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 0.3em;
+  border-radius: 3px;
+  font-family: ui-monospace, monospace;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .reset-buttons {
