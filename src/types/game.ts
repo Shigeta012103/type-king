@@ -57,6 +57,21 @@ export interface OwnedPrestigeUpgrade {
   purchased: boolean
 }
 
+export interface RepeatablePrestigeDefinition {
+  id: string
+  name: string
+  description: string
+  baseCost: number
+  costGrowth: number
+  effectPerLevel: number
+  icon: string
+}
+
+export interface OwnedRepeatablePrestige {
+  definitionId: string
+  level: number
+}
+
 export interface WordEntry {
   display: string
   reading: string
